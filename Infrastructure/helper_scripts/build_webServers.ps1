@@ -95,7 +95,7 @@ if ($oops){
     Write-Output $msg
 }
 
-if ($Wait){
+if ($Wait -and ($totalRequired -gt 0)){
     $allRunning = $false
     $allRegistered = $false
     $runningWarningGiven = $false
