@@ -198,7 +198,8 @@ if ($Wait -and ($totalRequired -gt 0)){
                 }
                 if ($sqlRunning){
                     $machinesRunningSQL += $ip
-                    Write-Output "        SQL Server is now available at $ip"+":1433"
+                    $msg = "        SQL Server is now available at $ip" + ":1433"
+                    Write-Output $msg
                     $newMachineOnline = $true
                 }
             }
