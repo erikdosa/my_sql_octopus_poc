@@ -70,13 +70,20 @@ jobs:
         Write-Output "Repo owner is: $repoOwner"
         Write-Output "Repo name is: $repoName"
         
-        $userDataPath = "D:\a\$repoName\$repoName\Infrastructure\helper_scripts\VM_UserData.ps1"
-        $oldUserData = Get-Content -Path $userDataPath -Raw
-
-        $userDataWithOwner = $oldUserData.replace("__REPOOWNER__",$repoOwner)
-        $newUserData = $userDataWithOwner.replace("__REPONAME__",$repoName)
-
-        Set-Content -Path $userDataPath  -Value $newUserData
+        function Update-VM_UserData{
+          param (
+            $fileName
+          )
+          $userDataPath = "D:\a\$repoName\$repoName\Infrastructure\helper_scripts\$fileName"
+          $oldUserData = Get-Content -Path $userDataPath -Raw
+          $userDataWithOwner = $oldUserData.replace("__REPOOWNER__",$repoOwner)
+          $newUserData = $userDataWithOwner.replace("__REPONAME__",$repoName)
+          Set-Content -Path $userDataPath  -Value $newUserData
+        }
+        
+        Update-VM_UserData -fileName VM_UserData.ps1
+        Update-VM_UserData -fileName VM_UserData_SQL.ps1
+        
       shell: powershell  
 
     - name: Setup NuGet.exe for use with actions
