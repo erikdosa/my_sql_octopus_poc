@@ -196,7 +196,7 @@ if ($Wait){
                 if ($ip -notIn $machinesRunningSQL){
                     $sqlRunning = Test-SQL -ip $ip
                 }
-                if ($iisRunning){
+                if ($sqlRunning){
                     $machinesRunningSQL += $ip
                     Write-Output "        SQL Server is now available at $ip"+":1433"
                     $newMachineOnline = $true
@@ -250,7 +250,7 @@ if ($Wait){
                 break
             }
             else {
-                $SQLCount = $machinesRunningIIS.Count
+                $SQLCount = $machinesRunningSQL.Count
                 Write-Output "      $time seconds: $SQLCount SQL installs and $NumRegistered tentacles registered out of $count."
             }
 
