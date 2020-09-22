@@ -1,0 +1,103 @@
+name: APP - Build, pack and push application to Octopus
+
+on:
+  push:
+    branches: '*'
+    paths:
+    - 'Application/**'
+    - '.github/workflows/app.yml'
+  pull_request:
+    branches: '*'
+    paths:
+    - 'Application/**'
+    - '.github/workflows/app.yml'
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Manual run' 
+
+env:  
+  MARSHALLING_FOLDER: Marshall
+  ARTIFACTS_FOLDER: Artifact
+  PACKAGE_NAME: RandomQuotes_application
+  OCTOPUS_PROJECT_NAME: RandomQuotes  
+  OCTOPUS_SPACE_NAME: Default
+  PACKAGE_VERSION: 0.0.${{ github.run_number }}
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    # extract branch name
+    - name: Extract branch name
+      if: github.event_name != 'pull_request'
+      shell: bash
+      run: echo "::set-env name=BRANCH_NAME::$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+
+    # extract branch name on pull request
+    - name: Clean branch name for pull requests
+      if: github.event_name == 'pull_request'
+      run: echo "::set-env name=BRANCH_NAME::$(echo ${GITHUB_HEAD_REF})"
+
+    # Setting a prerelease suffix if not main branch
+    # More info: https://docs.microsoft.com/en-us/nuget/create-packages/prerelease-packages#:~:text=To%20support%20the%20software%20release,%2Dbeta%20%2C%20or%20%2Drc%20.
+    - name: Set prerelease suffix
+      run: |
+        echo 'The branch name is:' $BRANCH_NAME
+        SUFFIX=""
+        if [ "$BRANCH_NAME" == "main" ]
+        then
+          echo "This branch is main. No prerelease suffix required."
+        else
+          $BRANCH_NAME = $BRANCH_NAME | tr / _ # replacing slashes with underscores
+          NUGETSUFFIX="-$BRANCH_NAME"
+          echo "This branch is not main. Adding prerelease suffix to NuGet version number."
+        fi
+        echo "::set-env name=SUFFIX::$(echo $NUGETSUFFIX)"
+      id: create_suffix
+      
+    - name: Logging variables      
+      run: |
+        echo MARSHALLING_FOLDER is: $MARSHALLING_FOLDER
+        echo ARTIFACTS_FOLDER is: $ARTIFACTS_FOLDER
+        echo OUTPUT_FOLDER is: $OUTPUT_FOLDER
+        echo PACKAGE_NAME is: $PACKAGE_NAME
+        echo OCTOPUS_PROJECT_NAME is: $OCTOPUS_PROJECT_NAME
+        echo OCTOPUS_SPACE_NAME is: $OCTOPUS_SPACE_NAME 
+        echo BRANCH_NAME is: $BRANCH_NAME
+        echo SUFFIX is: $SUFFIX
+      
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 2.2.108
+    
+    - name: Install dependencies
+      run: dotnet restore Application/RandomQuotes/RandomQuotes.csproj
+    
+    - name: Build
+      run: dotnet build Application/RandomQuotes/RandomQuotes.csproj --configuration Release --no-restore
+    
+    - name: Publish
+      run: dotnet publish Application/RandomQuotes/RandomQuotes.csproj --output $MARSHALLING_FOLDER
+    
+    - name: Install Octopus CLI
+      run: |
+        sudo apt update && sudo apt install --no-install-recommends gnupg curl ca-certificates apt-transport-https && \
+        curl -sSfL https://apt.octopus.com/public.key | sudo apt-key add - && \
+        sudo sh -c "echo deb https://apt.octopus.com/ stable main > /etc/apt/sources.list.d/octopus.com.list" && \
+        sudo apt update && sudo apt install octopuscli
+    
+    - name: Pack
+      run: octo pack --basePath=Application/RandomQuotes/$MARSHALLING_FOLDER --outFolder=$ARTIFACTS_FOLDER --id=$PACKAGE_NAME --version=$PACKAGE_VERSION$SUFFIX
+    
+    - name: Handoff to Octopus Deploy
+      env:
+        OCTOPUS_URL: ${{ secrets.OCTOPUS_SERVER_URL }}
+        OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+      run: octo push --package="$ARTIFACTS_FOLDER/$PACKAGE_NAME.$PACKAGE_VERSION$SUFFIX.nupkg" --server=$OCTOPUS_URL --apiKey=$OCTOPUS_API_KEY --space=$OCTOPUS_SPACE_NAME

@@ -1,0 +1,2 @@
+﻿New-IAMInstanceProfile -InstanceProfileName RandomQuotes
+Add-IAMRoleToInstanceProfile -InstanceProfileName RandomQuotes -RoleName SecretsManager

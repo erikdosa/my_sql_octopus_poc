@@ -1,0 +1,108 @@
+# This is a basic workflow to help you get started with Actions
+
+name: INFRA - Pack and push NuGet to Octopus
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+
+on:
+  push:
+    branches: '*'
+    paths:
+    - 'Infrastructure/**'
+    - '.github/workflows/infra.yml'
+  pull_request:
+    branches: '*'
+    paths:
+    - 'Infrastructure/**'
+    - '.github/workflows/infra.yml'
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Manual run' 
+
+env:  
+  OUTPUT_FOLDER: PackagesOutput
+  PACKAGE_NAME: RandomQuotes_infra
+  OCTOPUS_SPACE_NAME: Default
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    name: Package and push to Octopus
+    # The type of runner that the job will run on
+    runs-on: windows-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v2
+  
+    - name: Set the version number      
+      run: |        
+        # The first two numbers come from versionprefix.txt
+        $versionFromFile = Get-Content versionprefix.txt 
+        Write-Host "Found $versionFromFile in versionprefix.md"
+        
+        # The last number is the GitHub run number
+        $versionNumber = "$versionfromFile.${env:GITHUB_RUN_NUMBER}"
+        
+        # If this branch isn't main, append the branch name as a prerelease suffix
+        # More info: https://docs.microsoft.com/en-us/nuget/create-packages/prerelease-packages
+        $branchName = "${{github.ref}}".Split("/")["${{github.ref}}".Split("/").Length -1]
+        if ($branchName -notlike "main"){
+          $versionNumber = "$versionNumber-$branchName"
+        }
+        
+        Write-Host "Setting version number to: $versionNumber"
+        echo "::set-env name=PACKAGE_VERSION::$versionNumber"        
+      shell: powershell
+    
+    - name: Update UserData file to pull helper scripts from correct repo
+      run: |
+        $repo = ${env:GITHUB_REPOSITORY}
+        
+        $repoSplits = $repo -split "/"
+        $repoOwner = $repoSplits[0]
+        $repoName = $repoSplits[1]
+
+        Write-Output "Repo owner is: $repoOwner"
+        Write-Output "Repo name is: $repoName"
+        
+        $userDataPath = "D:\a\$repoName\$repoName\Infrastructure\helper_scripts\VM_UserData.ps1"
+        $oldUserData = Get-Content -Path $userDataPath -Raw
+
+        $userDataWithOwner = $oldUserData.replace("__REPOOWNER__",$repoOwner)
+        $newUserData = $userDataWithOwner.replace("__REPONAME__",$repoName)
+
+        Set-Content -Path $userDataPath  -Value $newUserData
+      shell: powershell  
+
+    - name: Setup NuGet.exe for use with actions
+      uses: NuGet/setup-nuget@v1.0.2
+
+    - name: Pack the NuGet
+      run: |
+        nuget pack "Infrastructure\${env:PACKAGE_NAME}.nuspec" -Version "${env:PACKAGE_VERSION}" -OutputDirectory "${env:OUTPUT_FOLDER}" 
+      shell: powershell  
+
+    - name: Install Octopus Tooling
+      run: choco install octopustools -y
+      shell: powershell
+
+    - name: Handoff to Octopus Deploy
+      env:
+        OCTOPUS_URL: ${{ secrets.OCTOPUS_SERVER_URL }}
+        OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}        
+      run: |        
+        octo push --package="${env:OUTPUT_FOLDER}\${env:PACKAGE_NAME}.${env:PACKAGE_VERSION}.nupkg" --server="${env:OCTOPUS_URL}" --apiKey="${env:OCTOPUS_API_KEY}" --space="${env:OCTOPUS_SPACE_NAME}"
+      shell: powershell   
+  
+  
+  
+  
+  
+  
+  
+  
