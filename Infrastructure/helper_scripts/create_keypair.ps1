@@ -1,5 +1,5 @@
 param(
-    $keyPairName = "RandomQuotes",
+    $keyPairName = "RandomQuotes_SQL",
     $keyPairDir = "C:\keypairs"
 )
 

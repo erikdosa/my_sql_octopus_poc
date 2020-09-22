@@ -57,7 +57,7 @@ if ($totalRequired -gt 0){
 
     Write-Output "      Instances will each have tag $role with value $tagValue."
 
-    $NewInstance = New-EC2Instance -ImageId $ami -MinCount $totalRequired -MaxCount $totalRequired -InstanceType $instanceType -UserData $encodedUserData -KeyName RandomQuotes -SecurityGroup RandomQuotes -IamInstanceProfile_Name RandomQuotes
+    $NewInstance = New-EC2Instance -ImageId $ami -MinCount $totalRequired -MaxCount $totalRequired -InstanceType $instanceType -UserData $encodedUserData -KeyName RandomQuotes_SQL -SecurityGroup RandomQuotes_SQL -IamInstanceProfile_Name RandomQuotes_SQL
 
     # Tagging all the instances
     ForEach ($InstanceID  in ($NewInstance.Instances).InstanceId){

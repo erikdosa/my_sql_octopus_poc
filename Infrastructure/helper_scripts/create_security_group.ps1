@@ -1,5 +1,5 @@
 param(
-    $securityGroupName = "RandomQuotes"
+    $securityGroupName = "RandomQuotes_SQL"
 )
 
 $ErrorActionPreference = "Stop"  

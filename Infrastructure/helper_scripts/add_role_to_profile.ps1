@@ -1,2 +1,2 @@
-﻿New-IAMInstanceProfile -InstanceProfileName RandomQuotes
-Add-IAMRoleToInstanceProfile -InstanceProfileName RandomQuotes -RoleName SecretsManager
+﻿New-IAMInstanceProfile -InstanceProfileName RandomQuotes_SQL
+Add-IAMRoleToInstanceProfile -InstanceProfileName RandomQuotes_SQL -RoleName SecretsManager
