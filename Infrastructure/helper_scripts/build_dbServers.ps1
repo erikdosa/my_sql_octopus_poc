@@ -198,13 +198,14 @@ if ($Wait){
                 }
                 if ($iisRunning){
                     $machinesRunningSQL += $ip
-                    Write-Output "        Default IIS site is now available at $ip"
+                    Write-Output "        SQL Server is now available at $ip"+":1433"
                     $newMachineOnline = $true
                 }
             }
 
             # Calling the API to find get machine data
             $envID = $OctopusParameters["Octopus.Environment.Id"]
+            Write-Warning "octoUrl/api/environments/envID is $octoUrl/api/environments/$envID"
             $environment = (Invoke-WebRequest "$octoUrl/api/environments/$envID" -Headers $header -UseBasicParsing).content | ConvertFrom-Json
             $environmentMachines = $Environment.Links.Machines.Split("{")[0]
             $machines = ((Invoke-WebRequest ($octoUrl + $environmentMachines) -Headers $header -UseBasicParsing).content | ConvertFrom-Json).items
