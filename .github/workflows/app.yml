@@ -19,7 +19,7 @@ on:
 env:  
   MARSHALLING_FOLDER: Marshall
   ARTIFACTS_FOLDER: Artifact
-  PACKAGE_NAME: RandomQuotes_application
+  PACKAGE_NAME: RandomQuotes_application_with_database
   OCTOPUS_PROJECT_NAME: RandomQuotes  
   OCTOPUS_SPACE_NAME: Default
   PACKAGE_VERSION: 0.0.${{ github.run_number }}
