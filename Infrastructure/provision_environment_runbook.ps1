@@ -6,11 +6,12 @@ param(
     $count = 1,
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
     $ami = "ami-0d2455a34bf134234", # Microsoft Windows Server 2019 Base with Containers
-    $tagName = "RandomQuotes",
     $tagValue = "Created manually",
     $octoUrl = "",
     $octoEnv = "",
-    [Switch]$DeployTentacle
+    [Switch]$DeployTentacle,
+    [Switch]$DeployDbServer,
+    [Switch]$DeployWebServers
 )
 
 $ErrorActionPreference = "Stop"  
@@ -107,8 +108,18 @@ Write-Output "  Parameters: -securityGroupName $securityGroupName"
 & $PSScriptRoot\helper_scripts\create_security_group.ps1 -securityGroupName $securityGroupName
 Write-Output "*"
 
-# Creates the VMs
-Write-Output "Executing .\helper_scripts\build_webServers.ps1..."
-Write-Output "  Parameters: -count $count -instanceType $instanceType -ami $ami -tagName $tagName -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait"
-& $PSScriptRoot\helper_scripts\build_webServers.ps1 -count $count -instanceType $instanceType -ami $ami -tagName $tagName -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait
-Write-Output "*"
+if (DeployDbServer){
+ # Creates the DB Server
+  Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
+  Write-Output "  Parameters: -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait"
+  & $PSScriptRoot\helper_scripts\build_dbServers.ps1 -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait
+  Write-Output "*"
+}
+
+if (DeployWebServers){
+  # Creates the WebServers
+  Write-Output "Executing .\helper_scripts\build_webServers.ps1..."
+  Write-Output "  Parameters: -count $count -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait"
+  & $PSScriptRoot\helper_scripts\build_webServers.ps1 -count $count -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait
+  Write-Output "*"
+}
