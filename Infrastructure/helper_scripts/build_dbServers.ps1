@@ -25,6 +25,8 @@ if ($DeployTentacle){
     # And substitute the octopus URL and environment
     $userData = $userData.replace("__OCTOPUSURL__",$octoUrl)
     $userData = $userData.replace("__ENV__",$octoEnv)
+    $userData = $userData.replace("__OCTOPUSURL__",$octoUrl)
+    $userData = $userData.replace("__ROLE__",$dbServerRole)
 }
 
 if (Test-Path $userDataPath){

@@ -48,6 +48,7 @@ Write-Output "To do: install SQL - probably via a container"
 <# DEPLOY TENTACLE
 $octopusServerUrl = "__OCTOPUSURL__"
 $registerInEnvironments = "__ENV__"
+$registerInRoles = "__ROLE__"
 
 Write-Output "*"
 Get-Script -script "install_tentacle.ps1"

@@ -56,6 +56,7 @@ Write-Output "Executing ./setup_dotnet_core.ps1"
 <# DEPLOY TENTACLE
 $octopusServerUrl = "__OCTOPUSURL__"
 $registerInEnvironments = "__ENV__"
+$registerInRoles = "__ROLE__"
 
 Write-Output "*"
 Get-Script -script "install_tentacle.ps1"
