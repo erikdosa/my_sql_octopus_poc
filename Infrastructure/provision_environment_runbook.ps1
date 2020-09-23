@@ -5,7 +5,7 @@ param(
     $securityGroupName = "RandomQuotes",
     $count = 1,
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
-    $ami = "ami-0d2455a34bf134234", # Microsoft Windows Server 2019 Base with Containers
+    $ami = "ami-03acdf9028d28249e", # Microsoft Windows Server 2019 Base with Containers
     $tagValue = "Created manually",
     $octoUrl = "",
     $octoEnv = "",
