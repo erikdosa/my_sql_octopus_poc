@@ -11,7 +11,7 @@ function get-secret(){
 Write-Output "  Getting sql passwords from AWS Secrets Manager"
 $studentPassword = Get-Secret -secret "STUDENT_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
 $octopusPassword = Get-Secret -secret "OCTOPUS_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
-$saPassword = Get-Secret -secret "SQL_SA_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
+$saPassword = Get-Secret -secret "SYSADMIN_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
 
 if ($Installedmodules.name -contains "dbatools"){
     Write-Output "  Module dbatools is already installed "
