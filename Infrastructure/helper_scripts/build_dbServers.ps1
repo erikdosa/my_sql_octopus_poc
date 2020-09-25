@@ -68,7 +68,7 @@ $oops = $false
 $err = "There is a problem with the following instances: "
 
 # Checking if it worked
-Write-Output "    Verifying that 1 SQL instance in running in $octoEnv environment: "
+Write-Output "    Verifying that 1 SQL instance is running in $octoEnv environment: "
 $instances = (Get-EC2Instance -Filter @{Name="tag:$dbServerRole";Values=$tagValue}, @{Name="instance-state-name";Values=$acceptableStates}).Instances
 
 ForEach ($instance in $instances){
