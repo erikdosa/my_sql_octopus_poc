@@ -23,7 +23,7 @@ if ($createGroup){
     Write-Output "    Enabling public RDP traffic to all VMs in the group $securityGroupName."
     $ip1 = @{ IpProtocol="tcp"; FromPort="3389"; ToPort="3389"; IpRanges="0.0.0.0/0" } # Remote Desktop
     $ip2 = @{ IpProtocol="tcp"; FromPort="10933"; ToPort="10933"; IpRanges="0.0.0.0/0" } # Octopus Deploy
-    $ip2 = @{ IpProtocol="tcp"; FromPort="1433"; ToPort="1433"; IpRanges="0.0.0.0/0" } # SQL Server
-    $ip3 = @{ IpProtocol="tcp"; FromPort="80"; ToPort="80"; IpRanges="0.0.0.0/0" } # Website hosting
-    Grant-EC2SecurityGroupIngress -GroupName $securityGroupName -IpPermission @($ip1, $ip2, $ip3)
+    $ip3 = @{ IpProtocol="tcp"; FromPort="1433"; ToPort="1433"; IpRanges="0.0.0.0/0" } # SQL Server
+    $ip4 = @{ IpProtocol="tcp"; FromPort="80"; ToPort="80"; IpRanges="0.0.0.0/0" } # Website hosting
+    Grant-EC2SecurityGroupIngress -GroupName $securityGroupName -IpPermission @($ip1, $ip2, $ip3, $ip4)
 }
