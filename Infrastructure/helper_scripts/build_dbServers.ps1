@@ -5,7 +5,6 @@ param(
     $tagValue = "Created manually",
     $octoUrl = "",
     $octoEnv = "",
-    [Switch]$DeployTentacle,
     [Switch]$Wait,
     $timeout = 1200 # seconds
 )
@@ -19,9 +18,6 @@ $userData = Get-Content -Path $userDataPath -Raw
 
 # Preparing startup script for VM
 if ($DeployTentacle){
-    # If deploying tentacle, uncomment the deploy tentacle script
-    $userData = $userData.replace("<# DEPLOY TENTACLE"," ")
-    $userData = $userData.replace("DEPLOY TENTACLE #>"," ")
     # And substitute the octopus URL and environment
     $userData = $userData.replace("__OCTOPUSURL__",$octoUrl)
     $userData = $userData.replace("__ENV__",$octoEnv)
@@ -138,33 +134,6 @@ if ($Wait -and ($totalRequired -gt 0)){
 
         Start-Sleep -s 10
     }
-    
-    # Authenticating to the API
-    try {
-        $APIKey = $OctopusParameters["API_KEY"]
-        $header = @{ "X-Octopus-ApiKey" = $APIKey }
-    }
-    catch {
-        Write-Warning 'Failed to read the Octopus API Key from $OctopusParameters["API_KEY"].'
-    }
-
-    # Updating calimari on all tentacles
-    function Update-Calimari {
-        param (
-            [Parameter(Mandatory=$true)][string]$MachineId,
-            [Parameter(Mandatory=$true)][string]$MachineName
-        )
-        $body = @{ 
-            Name = "UpdateCalamari" 
-            Description = "Updating calamari on $MachineName" 
-            Arguments = @{ 
-                Timeout= "00:05:00" 
-                MachineIds = @($MachineId) #$MachineId could contain an array of machines too
-            } 
-        } | ConvertTo-Json
-        
-        Invoke-RestMethod $octoUrl/api/tasks -Method Post -Body $body -Headers $header | out-null
-    }
 
     function Test-SQL {
         param (
@@ -179,97 +148,4 @@ if ($Wait -and ($totalRequired -gt 0)){
         return $true
     }
 
-    if ($deployTentacle){
-        $machineNames = @()
-        $machinesRunningSQL = @()
-    
-        Write-Output "    Waiting for tentacles to register with Octopus Server."
-        Write-Output "    (It normally takes 3-5 minutes to set up IIS and 7-10 minutes to register tentacles.)"
-        $stopwatch.Restart()
-
-        While (-not $allRegistered){
-            # Seeing how long we've been waiting so far
-            $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-            
-            # Checking the progress with IIS
-            $newMachineOnline = $false
-            forEach ($ip in $ipAddresses){
-                $sqlRunning = $false
-                if ($ip -notIn $machinesRunningSQL){
-                    $sqlRunning = Test-SQL -ip $ip
-                }
-                if ($sqlRunning){
-                    $machinesRunningSQL += $ip
-                    $msg = "        SQL Server is now available at $ip" + ":1433"
-                    Write-Output $msg
-                    $newMachineOnline = $true
-                }
-            }
-
-            # Calling the API to find get machine data
-            $envID = $OctopusParameters["Octopus.Environment.Id"]
-            $environment = (Invoke-WebRequest "$octoUrl/api/environments/$envID" -Headers $header -UseBasicParsing).content | ConvertFrom-Json
-            $environmentMachines = $Environment.Links.Machines.Split("{")[0]
-            $machines = ((Invoke-WebRequest ($octoUrl + $environmentMachines) -Headers $header -UseBasicParsing).content | ConvertFrom-Json).items
-            $MachinesInRole = @()
-            $MachinesInRole += $machines | Where-Object {$dbServerRole -in $_.Roles}
-            
-            # If we've found a new machine, logging the details
-            $NumRegistered = $MachinesInRole.Count
-            $newlyRegisteredMachines = @()
-            if ($NumRegistered -gt $machineNames.Count){
-                ForEach ($m in $MachinesInRole){
-                    if ($m.Name -notin $machineNames){
-                        $name = $m.Name
-                        $uri = $m.URI
-                        $id = $m.Id
-                        Write-Output "        Machine $name registered with URI $uri"
-                        $machine = @{ id = $id; name = $name}
-                        $newlyRegisteredMachines += $machine
-                        $machineNames += $name
-                    }
-                }
-            }
-            # If we've found any new machines, updating Calimari on each
-            if ($newlyRegisteredMachines.Count -gt 0){
-                $updateCalimariMsg = "          Updating Calimari on the following machines:"
-                foreach ($machine in $newlyRegisteredMachines){
-                    $name = $machine.name
-                    $updateCalimariMsg += " $name,"
-                }
-                Write-Output $updateCalimariMsg
-                foreach ($machine in $newlyRegisteredMachines){
-                    $id = $machine.id
-                    $name = $machine.name
-                    Update-Calimari -MachineID $id -MachineName $name
-                }
-            }
-        
-            # If we have all the machines we ordered, break out of the loop
-            if ($NumRegistered -ge $count){
-                $allRegistered = $true
-                Write-Output "      $time seconds: $NumRegistered out of $count instances are registered."
-                Write-Output "    SUCCESS! All $count machines are registered!"
-                break
-            }
-            else {
-                $SQLCount = $machinesRunningSQL.Count
-                Write-Output "      $time seconds: $SQLCount SQL installs and $NumRegistered tentacles registered out of $count."
-            }
-
-            # If we've been waiting an oddly long amount of time, raise a warning
-            if (($time -gt 600) -and (-not $registeredWarningGiven)){
-                Write-Warning "Machines are taking an unusually long time to register."
-                $registeredWarningGiven = $true
-            }
-
-            # If we've been waiting too long, time out
-            if ($time -gt $timeout){
-                Write-Error "Timed out at $time seconds. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
-            }
-            
-            # Seems we don't yet have all of our machines: Let's wait 30s and try again
-            Start-Sleep -s 30
-        }
-    }
 }
