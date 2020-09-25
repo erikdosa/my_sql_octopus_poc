@@ -165,7 +165,7 @@ if ($Wait -and ($totalRequired -gt 0)){
             $ip
         )
         try { 
-            Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred
+            Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred -EnableException
         }
         catch {
             return $false
