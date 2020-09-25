@@ -29,15 +29,6 @@ if ($lastExitCode -ne 0) {
   throw "Installation failed when modifying firewall rules"
 }
 
-# installng choco
-Write-Host "Installing Chocolatey."
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-choco feature enable -n allowGlobalConfirmation
-
 # installing SQL Server
 Write-Host "Installing SQL Server with Chocolatey."
 choco install sql-server-2019 --params="'/ConfigurationFile:C:\Startup\scripts\ConfigurationFile.ini'"
-
-# installng SSMS
-Write-Host "Also installing SSMS for convenience."
-choco install sql-server-management-studio

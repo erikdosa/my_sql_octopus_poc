@@ -29,6 +29,6 @@ Write-Output "  Creating student and octopus logins."
 New-DbaLogin -SqlInstance . -Login student -SecurePassword $studentPassword -SqlCredential $cred
 New-DbaLogin -SqlInstance . -Login octopus -SecurePassword $octopusPassword -SqlCredential $cred
 
-Write-Output "  Making student and octopus SysAdmins."
+Write-Output "  Making both student and octopus logins SysAdmins."
 Set-DbaLogin -SqlInstance . -Login student -AddRole "sysadmin" -SqlCredential $cred
 Set-DbaLogin -SqlInstance . -Login octopus -AddRole "sysadmin" -SqlCredential $cred
