@@ -6,7 +6,7 @@ param(
     $octoUrl = "",
     $octoEnv = "",
     [Switch]$Wait,
-    $timeout = 1200 # seconds
+    $timeout = 4800 # seconds
 )
 
 $ErrorActionPreference = "Stop"
@@ -94,14 +94,12 @@ if ($oops){
 
 if ($Wait -and ($totalRequired -gt 0)){
     $allRunning = $false
-    $allRegistered = $false
     $runningWarningGiven = $false
-    $registeredWarningGiven = $false
-    $ipAddresses = @()
+    $ipAddress = ""
 
     Write-Output "    Waiting for instances to start. (This normally takes about 30 seconds.)"
     $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
-    
+
     While (-not $allRunning){
         $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
         
@@ -122,9 +120,8 @@ if ($Wait -and ($totalRequired -gt 0)){
             Write-Output "      $time seconds: All instances are running!"
             ForEach ($instance in $runningInstances){
                 $id = $instance.InstanceId
-                $ip = $instance.PublicIpAddress
-                $ipAddresses += $ip
-                Write-Output "        Instance $id is available at the public IP: $ip"
+                $ipAddress = $instance.PublicIpAddress
+                Write-Output "        Instance $id is available at the public IP: $ipAddress"
             }
             break
         }
@@ -135,17 +132,85 @@ if ($Wait -and ($totalRequired -gt 0)){
         Start-Sleep -s 10
     }
 
+    Write-Output "    While we wait for SQL Server to install, ensuring dbatools is installed on worker."
+    Write-Output "      (We will use DBA tools to ping SQL Server to see when it comes online.)"
+
+    if ($Installedmodules.name -contains "dbatools"){
+        Write-Output "    Module dbatools is already installed "
+    }
+    else {
+        Write-Output "    dbatools is not installed."
+        Write-Output "      Installing dbatools..."
+        Install-Module dbatools -Force
+    }
+
+    Write-Output "    Retrieving SQL credentials from AWS Secrets Manager."
+    
+    function Get-Secret(){
+      param ($secret)
+      $secretValue = Get-SECSecretValue -SecretId $secret
+      # values are returned in format: {"key":"value"}
+      $splitValue = $secretValue.SecretString -Split '"'
+      $cleanedSecret = $splitValue[3]
+      return $cleanedSecret
+    }
+    $saPassword = Get-Secret -secret "SQL_SA_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
+    $saUsername = "sa"
+    $octopusPassword = Get-Secret -secret "OCTOPUS_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
+    $octopusUsername = "octopus"
+    $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUsername, $saPassword
+
     function Test-SQL {
         param (
             $ip
         )
         try { 
-            Write-Warning "To do: implement a check to see if SQL Server is responding"
+            Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred
         }
         catch {
             return $false
         }
         return $true
+    }
+
+    
+    $connectedAsSa = $false
+    $connectedAsOctopus = $false
+    While (-not $connectedAsOctopus){
+        
+        $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+        
+        if ($time -gt $timeout){
+            Write-Error "Timed out at $time seconds. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
+        }
+        
+        if (($time -gt 2400) -and (-not $runningWarningGiven)){
+            Write-Warning "SQL Server is taking an unusually long time to start."
+            $runningWarningGiven = $true
+        }
+        
+        # Testing if SQL Server is online
+        try {
+            Test-SQL -ip $ipAddress
+            if (-not $connectedAsSa){
+                Write-Output "        $time seconds: SQL Server running. Will now wait for Octopus Login to be deployed."
+                $connectedAsSa = $true
+                $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octopusUsername, $octopusPassword
+            }
+        }
+        catch {
+            $connectedAsOctopus = $false
+        }
+
+        if (-not $connectedAsOctopus){
+            Write-Output "      $time seconds: SQL Server is not available yet."
+        }
+        else {
+            Write-Output "      SUCCESS! SQL Server is available at: $ipAddress"
+            break
+        }
+
+        Start-Sleep -s 30
     }
 
 }
