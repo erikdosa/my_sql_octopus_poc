@@ -13,14 +13,10 @@ $studentPassword = Get-Secret -secret "STUDENT_SQL_PASSWORD" | ConvertTo-SecureS
 $octopusPassword = Get-Secret -secret "OCTOPUS_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
 $saPassword = Get-Secret -secret "SYSADMIN_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
 
-if ($Installedmodules.name -contains "dbatools"){
-    Write-Output "  Module dbatools is already installed "
-}
-else {
-    Write-Output "  dbatools is not installed."
-    Write-Output "    Installing dbatools..."
-    Install-Module dbatools -Force
-}
+Write-Output "      Installing NuGet package provider (required for dbatools)..."
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force 
+Write-Output "      Installing dbatools..."
+Install-Module dbatools -Force
 
 $saUser = "sa"
 $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUser, $saPassword
