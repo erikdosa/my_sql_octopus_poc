@@ -13,7 +13,6 @@ catch {
     Write-Output "Profile RandomQuotes_SQL does not already exist."
 }
 
-
 Write-Output "Creating new profile: RandomQuotes_SQL"
 New-IAMInstanceProfile -InstanceProfileName RandomQuotes_SQL
 
