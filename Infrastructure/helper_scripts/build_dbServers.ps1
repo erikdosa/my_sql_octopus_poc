@@ -132,14 +132,11 @@ if ($Wait -and ($totalRequired -gt 0)){
         Start-Sleep -s 10
     }
 
-    Write-Output "    Installing dbatools so that we can ping SQL Server."
-
-    if ($Installedmodules.name -contains "dbatools"){
-        Write-Output "    Module dbatools is already installed "
+    try {
+        Import-Module dbatools
     }
-    else {
-        Write-Output "    dbatools is not installed."
-        Write-Output "      Installing dbatools..."
+    catch {
+        Write-Output "    Installing dbatools so that we can ping SQL Server..."
         Write-Output "      (This takes a couple of minutes)"
         Install-Module dbatools -Force
     }
@@ -147,7 +144,7 @@ if ($Wait -and ($totalRequired -gt 0)){
     function Test-SQL {
         param (
             $ip,
-            [SecureString]$cred
+            $cred
         )
         try { 
             Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred -EnableException
@@ -161,7 +158,7 @@ if ($Wait -and ($totalRequired -gt 0)){
     function Wait-ForConnection {
         param (
             $ipAddress,
-            [SecureString]$cred,
+            $cred,
             $waitMsg,
             $successMsg,
             $timeout
