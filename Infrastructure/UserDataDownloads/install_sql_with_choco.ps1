@@ -20,6 +20,12 @@ Write-Host "Replacing the placeholder user name in Confifuration.ini with $user.
 $replaceText = (Get-Content -path "C:\Startup\scripts\ConfigurationFile.ini" -Raw) -replace "__MY_USER__", $user
 Set-Content "C:\Startup\scripts\ConfigurationFile.ini" $replaceText
 
+Write-Host "Opening port 1433 on Windows Firewall"
+& netsh.exe firewall add portopening TCP 1433 "SQL Server"
+if ($lastExitCode -ne 0) {
+  throw "Installation failed when modifying firewall rules"
+}
+
 Write-Host "Installing Chocolatey."
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 choco feature enable -n allowGlobalConfirmation
