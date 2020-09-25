@@ -1,9 +1,22 @@
 # Creating RDP and Octopus users
-Write-Output "  Creating users"
+function get-secret(){
+  param ($secret)
+  $secretValue = Get-SECSecretValue -SecretId $secret
+  # values are returned in format: {"key":"value"}
+  $splitValue = $secretValue.SecretString -Split '"'
+  $cleanedSecret = $splitValue[3]
+  return $cleanedSecret
+}
+
+Write-Output "  Retrieving user passwords from AWS Secrets Manager"
+
 $rdpUser = "student"
-$rdpPwd = ConvertTo-SecureString "D3vOpsRocks!" -AsPlainText -Force
+$rdpPwd = Get-Secret -secret "STUDENT_PASSWORD"
 $octoUser = "octopus"
-$octoPwd = ConvertTo-SecureString "5re4lsoRocks!" -AsPlainText -Force
+$octoPwd = Get-Secret -secret "OCTOPUS_PASSWORD"
+
+Write-Output "  Creating users"
+
 function New-User {
     param ($user, $password)
     Write-Output "    Creating a user: $user."

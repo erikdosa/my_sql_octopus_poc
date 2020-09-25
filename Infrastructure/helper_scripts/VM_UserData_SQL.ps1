@@ -50,6 +50,11 @@ Get-Script -script "install_sql_with_choco.ps1"
 Write-Output "Executing ./install_sql_with_choco.ps1"
 ./install_sql_with_choco.ps1
 
+Write-Output "*"
+Get-Script -script "setup_sql_users.ps1"
+Write-Output "Executing ./setup_sql_users.ps1"
+./setup_sql_users.ps1
+
 Write-Output "VM_UserData startup script completed..."
 </powershell>
 
