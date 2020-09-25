@@ -44,14 +44,11 @@ Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
 Write-Output "*"
+Write-Output "Downloading ConfigurationFile.ini and install_sql_with_choco.ps1"
 Get-Script -script "ConfigurationFile.ini"
-Write-Output "Downloading ConfigurationFile.ini"
-Get-Script -script "setup_sql.ps1"
-
-# Need to figure out how to install the ISO first. Might use chocolatey instead.
-
-# Write-Output "Executing ./setup_sql.ps1"
-# ./setup_users.ps1
+Get-Script -script "install_sql_with_choco.ps1"
+Write-Output "Executing ./install_sql_with_choco.ps1"
+./install_sql_with_choco.ps1
 
 Write-Output "VM_UserData startup script completed..."
 </powershell>
