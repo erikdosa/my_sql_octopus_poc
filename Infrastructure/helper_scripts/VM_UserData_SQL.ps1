@@ -43,18 +43,12 @@ Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
-Write-Output "To do: install SQL - probably via a container"
-
-<# DEPLOY TENTACLE
-$octopusServerUrl = "__OCTOPUSURL__"
-$registerInEnvironments = "__ENV__"
-$registerInRoles = "__ROLE__"
-
 Write-Output "*"
-Get-Script -script "install_tentacle.ps1"
-Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
-./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
-DEPLOY TENTACLE #>
+Get-Script -script "ConfigurationFile.ini"
+Write-Output "Downloading ConfigurationFile.ini"
+Get-Script -script "setup_sql.ps1"
+Write-Output "Executing ./setup_sql.ps1"
+./setup_users.ps1
 
 Write-Output "VM_UserData startup script completed..."
 </powershell>
