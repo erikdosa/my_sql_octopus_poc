@@ -146,15 +146,11 @@ if ($Wait -and ($totalRequired -gt 0)){
 
     Write-Output "    Retrieving SQL credentials from AWS Secrets Manager."
     
-    $saPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
-    $saUsername = "sa"
-    $octopusPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
-    $octopusUsername = "octopus"
-    $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUsername, $saPassword
 
     function Test-SQL {
         param (
-            $ip
+            $ip,
+            $cred
         )
         try { 
             Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred -EnableException
@@ -167,40 +163,60 @@ if ($Wait -and ($totalRequired -gt 0)){
 
     $connectedAsSa = $false
     $connectedAsOctopus = $false
-    While (-not $connectedAsOctopus){
-        
+    $saPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
+    $saUsername = "sa"
+    $saCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUsername, $saPassword
+    $octopusPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
+    $octopusUsername = "octopus"
+    $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octopusUsername, $octopusPassword
+
+    While (-not $connectedAsSa){   
         $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-        
         if ($time -gt $timeout){
             Write-Error "Timed out at $time seconds. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
-        }
-        
+        }    
         if (($time -gt 2400) -and (-not $runningWarningGiven)){
             Write-Warning "SQL Server is taking an unusually long time to start."
             $runningWarningGiven = $true
         }
-        
         # Testing if SQL Server is online
         try {
-            Test-SQL -ip $ipAddress
-            if (-not $connectedAsSa){
-                Write-Output "        $time seconds: SQL Server running. Will now wait for Octopus Login to be deployed."
-                $connectedAsSa = $true
-                $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octopusUsername, $octopusPassword
+            if (Test-SQL -ip $ipAddress -cred $saCred){
+                    $connectedAsSa = $true
+                    Write-Output "        $time seconds: SQL Server running. Will now wait for Octopus Login to be deployed."
+            } 
+            else {
+                Write-Output "      $time seconds: SQL Server is not available to sa yet."
             }
         }
         catch {
-            $connectedAsOctopus = $false
+            Write-Warning "something broke"
         }
+        Start-Sleep -s 30
+    }
 
-        if (-not $connectedAsOctopus){
-            Write-Output "      $time seconds: SQL Server is not available yet."
+    While (-not $connectedAsOctopus){   
+        $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+        if ($time -gt $timeout){
+            Write-Error "Timed out at $time seconds. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
+        }    
+        if (($time -gt 2400) -and (-not $runningWarningGiven)){
+            Write-Warning "SQL Server is taking an unusually long time to start."
+            $runningWarningGiven = $true
         }
-        else {
-            Write-Output "      SUCCESS! SQL Server is available at: $ipAddress"
-            break
+        # Testing if SQL Server is online
+        try {
+            if (Test-SQL -ip $ipAddress -cred $octoCred){
+                    $connectedAsOctopus = $true
+                    Write-Output "      SUCCESS! SQL Server is available at: $ipAddress"
+            } 
+            else {
+                Write-Output "      $time seconds: SQL Server is not available to sa yet."
+            }
         }
-
+        catch {
+            Write-Warning "something broke"
+        }
         Start-Sleep -s 30
     }
 
