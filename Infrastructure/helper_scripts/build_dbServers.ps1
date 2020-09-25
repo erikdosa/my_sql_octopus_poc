@@ -149,9 +149,6 @@ if ($Wait -and ($totalRequired -gt 0)){
         Install-Module dbatools -Force
     }
 
-    Write-Output "    Retrieving SQL credentials from AWS Secrets Manager."
-    
-
     function Test-SQL {
         param (
             $ip,
