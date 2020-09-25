@@ -173,7 +173,6 @@ if ($Wait -and ($totalRequired -gt 0)){
         return $true
     }
 
-    
     $connectedAsSa = $false
     $connectedAsOctopus = $false
     While (-not $connectedAsOctopus){
