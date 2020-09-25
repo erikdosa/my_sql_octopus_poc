@@ -134,9 +134,6 @@ if ($Wait -and ($totalRequired -gt 0)){
 
     Write-Output "    While we wait for SQL Server to install, ensuring dbatools is installed on worker."
     Write-Output "      (We will use DBA tools to ping SQL Server to see when it comes online.)"
-
-    Write-Output "      Installing NuGet package provider (required for dbatools)..."
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force 
     Write-Output "      Installing dbatools..."
     Install-Module dbatools -Force
 
