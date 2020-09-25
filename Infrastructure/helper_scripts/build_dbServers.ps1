@@ -140,6 +140,7 @@ if ($Wait -and ($totalRequired -gt 0)){
     else {
         Write-Output "    dbatools is not installed."
         Write-Output "      Installing dbatools..."
+        Write-Output "      (This takes a couple of minutes)"
         Install-Module dbatools -Force
     }
 
