@@ -111,8 +111,8 @@ Write-Output "*"
 if ($DeployDbServer){
  # Creates the DB Server
   Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
-  Write-Output "  Parameters: -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv"
-  & $PSScriptRoot\helper_scripts\build_dbServers.ps1 -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv
+  Write-Output "  Parameters: -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -Wait"
+  & $PSScriptRoot\helper_scripts\build_dbServers.ps1 -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -Wait
   Write-Output "*"
 }
 
