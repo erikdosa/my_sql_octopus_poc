@@ -132,10 +132,7 @@ if ($Wait -and ($totalRequired -gt 0)){
         Start-Sleep -s 10
     }
 
-    Write-Output "    While we wait for SQL Server to install, ensuring dbatools is installed on worker."
-    Write-Output "      (We will use DBA tools to ping SQL Server to see when it comes online.)"
-    Write-Output "      Installing dbatools..."
-    Install-Module dbatools -Force
+    Write-Output "    Installing dbatools so that we can ping SQL Server."
 
     if ($Installedmodules.name -contains "dbatools"){
         Write-Output "    Module dbatools is already installed "
@@ -149,7 +146,7 @@ if ($Wait -and ($totalRequired -gt 0)){
     function Test-SQL {
         param (
             $ip,
-            $cred
+            [SecureString]$cred
         )
         try { 
             Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred -EnableException
@@ -160,63 +157,51 @@ if ($Wait -and ($totalRequired -gt 0)){
         return $true
     }
 
-    $connectedAsSa = $false
-    $connectedAsOctopus = $false
+    function Wait-ForConnection {
+        params (
+            $ipAddress,
+            $cred,
+            $waitMsg,
+            $successMsg,
+            $timeout
+        )
+        $connectionMade = $false
+        While (-not $connectionMade){   
+            $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+            if ($time -gt $timeout){
+                Write-Error "$time seconds: This is taking too long. Something is probably broken."
+            }    
+            try {
+                if (Test-SQL -ip $ipAddress -cred $saCred){
+                        $connectionMade = $true
+                        Write-Output "        $time seconds: $successMsg"
+                } 
+                else {
+                    Write-Output "      $time seconds: $waitMsg"
+                }
+            }
+            catch {
+                Write-Warning "something broke"
+            }
+            Start-Sleep -s 20
+        }
+    }
+
     $saPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
     $saUsername = "sa"
     $saCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUsername, $saPassword
-    $octopusPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
-    $octopusUsername = "octopus"
-    $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octopusUsername, $octopusPassword
+    $saWaitMsg = "SQL Server not online yet."
+    $saSuccessMsg = "SUCCESS: SQL Server is running and available at: $ipAddress"
 
-    While (-not $connectedAsSa){   
-        $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-        if ($time -gt $timeout){
-            Write-Error "Timed out at $time seconds. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
-        }    
-        if (($time -gt 2400) -and (-not $runningWarningGiven)){
-            Write-Warning "SQL Server is taking an unusually long time to start."
-            $runningWarningGiven = $true
-        }
-        # Testing if SQL Server is online
-        try {
-            if (Test-SQL -ip $ipAddress -cred $saCred){
-                    $connectedAsSa = $true
-                    Write-Output "        $time seconds: SQL Server running. Will now wait for Octopus Login to be deployed."
-            } 
-            else {
-                Write-Output "      $time seconds: SQL Server is not available to sa yet."
-            }
-        }
-        catch {
-            Write-Warning "something broke"
-        }
-        Start-Sleep -s 30
-    }
+    Write-Output "    Waiting for SQL Server to come online. (Usually within 600 seconds.)"
+    Wait-ForConnection -ipAddress $ipAddress -cred $saCred -waitMsg $saWaitMsg -successMsg $saSuccessMsg -timeout 800
 
-    While (-not $connectedAsOctopus){   
-        $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-        if ($time -gt $timeout){
-            Write-Error "Timed out at $time seconds. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
-        }    
-        if (($time -gt 2400) -and (-not $runningWarningGiven)){
-            Write-Warning "SQL Server is taking an unusually long time to start."
-            $runningWarningGiven = $true
-        }
-        # Testing if SQL Server is online
-        try {
-            if (Test-SQL -ip $ipAddress -cred $octoCred){
-                    $connectedAsOctopus = $true
-                    Write-Output "      SUCCESS! SQL Server is available at: $ipAddress"
-            } 
-            else {
-                Write-Output "      $time seconds: Octopus and student logins not yet deployed."
-            }
-        }
-        catch {
-            Write-Warning "something broke"
-        }
-        Start-Sleep -s 30
-    }
+    $octoUsername = "octopus"
+    $octoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
+    $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octoUsername, $octoPassword
+    $octoWaitMsg = "SQL logins not deployed yet."
+    $octoSuccessMsg = "SUCCESS: SQL Server logins deployed!"
 
+    Write-Output "    Waiting for SQL logins to be deployed. (Usually within 1200 seconds.)"
+    Wait-ForConnection -ipAddress $ipAddress -cred $octoCred -waitMsg $octoWaitMsg -successMsg $octoSuccessMsg -timeout 1400
 }
