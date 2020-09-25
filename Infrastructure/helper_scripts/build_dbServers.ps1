@@ -211,7 +211,7 @@ if ($Wait -and ($totalRequired -gt 0)){
                     Write-Output "      SUCCESS! SQL Server is available at: $ipAddress"
             } 
             else {
-                Write-Output "      $time seconds: SQL Server is not available to sa yet."
+                Write-Output "      $time seconds: Octopus and student logins not yet deployed."
             }
         }
         catch {
