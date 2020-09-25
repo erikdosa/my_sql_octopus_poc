@@ -18,7 +18,7 @@ function get-secret(){
 }
 
 Write-Host "Retrieving sa password from EC2 Secrets Manager and updating Confifuration.ini."
-$saPassword = Get-Secret -secret "SQL_SA_PASSWORD"
+$saPassword = Get-Secret -secret "SYSADMIN_SQL_PASSWORD"
 $replaceText = (Get-Content -path "C:\Startup\scripts\ConfigurationFile.ini" -Raw) -replace "__SQL_SA_PASSWORD__", $saPassword
 Set-Content "C:\Startup\scripts\ConfigurationFile.ini" $replaceText
 

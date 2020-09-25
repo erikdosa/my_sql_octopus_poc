@@ -11,9 +11,9 @@ function get-secret(){
 Write-Output "  Retrieving user passwords from AWS Secrets Manager"
 
 $rdpUser = "student"
-$rdpPwd = Get-Secret -secret "STUDENT_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
+$rdpPwd = Get-Secret -secret "STUDENT_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
 $octoUser = "octopus"
-$octoPwd = Get-Secret -secret "OCTOPUS_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
+$octoPwd = Get-Secret -secret "OCTOPUS_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
 
 Write-Output "  Creating users"
 

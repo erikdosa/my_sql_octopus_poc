@@ -146,17 +146,9 @@ if ($Wait -and ($totalRequired -gt 0)){
 
     Write-Output "    Retrieving SQL credentials from AWS Secrets Manager."
     
-    function Get-Secret(){
-      param ($secret)
-      $secretValue = Get-SECSecretValue -SecretId $secret
-      # values are returned in format: {"key":"value"}
-      $splitValue = $secretValue.SecretString -Split '"'
-      $cleanedSecret = $splitValue[3]
-      return $cleanedSecret
-    }
-    $saPassword = Get-Secret -secret "SQL_SA_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
+    $saPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
     $saUsername = "sa"
-    $octopusPassword = Get-Secret -secret "OCTOPUS_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
+    $octopusPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
     $octopusUsername = "octopus"
     $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUsername, $saPassword
 
