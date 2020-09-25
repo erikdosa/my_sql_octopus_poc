@@ -158,9 +158,9 @@ if ($Wait -and ($totalRequired -gt 0)){
     }
 
     function Wait-ForConnection {
-        params (
+        param (
             $ipAddress,
-            $cred,
+            [SecureString]$cred,
             $waitMsg,
             $successMsg,
             $timeout
