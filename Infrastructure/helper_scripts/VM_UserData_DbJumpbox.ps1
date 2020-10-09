@@ -43,17 +43,6 @@ Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
-Write-Output "*"
-Get-Script -script "setup_iis.ps1"
-Write-Output "Executing ./setup_iis.ps1"
-./setup_iis.ps1
-
-Write-Output "*"
-Get-Script -script "setup_dotnet_core.ps1"
-Write-Output "Executing ./setup_dotnet_core.ps1"
-./setup_dotnet_core.ps1
-
-<# DEPLOY TENTACLE
 $octopusServerUrl = "__OCTOPUSURL__"
 $registerInEnvironments = "__ENV__"
 $registerInRoles = "__ROLE__"
@@ -62,7 +51,17 @@ Write-Output "*"
 Get-Script -script "install_tentacle.ps1"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
-DEPLOY TENTACLE #>
+
+# Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
+
+Write-Output "*"
+Get-Script -script "install_choco.ps1"
+Write-Output "Executing ./install_choco.ps1"
+./install_choco.ps1
+Write-Output "*"
+Get-Script -script "install_ssms.ps1"
+Write-Output "Executing ./install_ssms.ps1"
+./install_ssms.ps1
 
 Write-Output "VM_UserData startup script completed..."
 </powershell>

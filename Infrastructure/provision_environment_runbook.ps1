@@ -3,7 +3,7 @@ param(
     $awsSecretKey = "",
     $defaulAwsRegion = "eu-west-1", # Other carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
     $securityGroupName = "RandomQuotes",
-    $count = 1,
+    $numWebServers = 1,
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
     $ami = "ami-03acdf9028d28249e", # Microsoft Windows Server 2019 Base with Containers
     $tagValue = "Created manually",
@@ -26,9 +26,10 @@ $missingParams = @()
 if ($awsAccessKey -like ""){
     try {
         $awsAccessKey = $OctopusParameters["AWS_ACCOUNT.AccessKey"]
-        Write-Output "Found value for awsAccessKey from Octopus variables: $awsAccessKey" 
+        Write-Output "Found value for awsAccessKey from Octopus variables." 
     }
     catch {
+        Write-Warning "Did not find value for awsAccessKey from Octopus variables!" 
         $missingParams = $missingParams + "-awsAccessKey"
     }
 }
@@ -36,9 +37,10 @@ if ($awsAccessKey -like ""){
 if ($awsSecretKey -like ""){
     try {
         $awsSecretKey = $OctopusParameters["AWS_ACCOUNT.SecretKey"]
-        Write-Output "Found value for awsSecretKey from Octopus variables: $awsSecretKey" 
+        Write-Output "Found value for awsSecretKey from Octopus variables." 
     }
     catch {
+        Write-Warning "Did not find value for awsSecretKey from Octopus variables!" 
         $missingParams = $missingParams + "-awsSecretKey"
     }
 }
@@ -98,7 +100,7 @@ Write-Output "*"
 
 # Configure your default profile
 Write-Output "Executing .\helper_scripts\configure_default_aws_profile.ps1..."
-Write-Output "  (No parameters)"
+Write-Output "  Parameters: -AwsAccessKey $awsAccessKey -AwsSecretKey *** -DefaulAwsRegion $defaulAwsRegion"
 & $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -AwsAccessKey $awsAccessKey -AwsSecretKey $awsSecretKey -DefaulAwsRegion $defaulAwsRegion
 Write-Output "*"
 
@@ -108,18 +110,8 @@ Write-Output "  Parameters: -securityGroupName $securityGroupName"
 & $PSScriptRoot\helper_scripts\create_security_group.ps1 -securityGroupName $securityGroupName
 Write-Output "*"
 
-if ($DeployDbServer){
- # Creates the DB Server
-  Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
-  Write-Output "  Parameters: -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -Wait"
-  & $PSScriptRoot\helper_scripts\build_dbServers.ps1 -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -Wait
-  Write-Output "*"
-}
-
-if ($DeployWebServers){
-  # Creates the WebServers
-  Write-Output "Executing .\helper_scripts\build_webServers.ps1..."
-  Write-Output "  Parameters: -count $count -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait"
-  & $PSScriptRoot\helper_scripts\build_webServers.ps1 -count $count -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait
-  Write-Output "*"
-}
+# Deploys all the VMs
+Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
+Write-Output "  Parameters: -numWebServers $numWebServers"
+& $PSScriptRoot\helper_scripts\build_dbServers.ps1 -numWebServers $numWebServers
+Write-Output "*"
