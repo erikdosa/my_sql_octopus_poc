@@ -18,6 +18,7 @@ $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
 $rolePrefix = ""
 try {
     $rolePrefix = $OctopusParameters["Octopus.Project.Name"]
+    Write-Output "    Detected Project: $rolePrefix"
 }
 catch {
     $rolePrefix = "RandomQuotes_SQL"
@@ -26,6 +27,7 @@ catch {
 $tagValue = ""
 try {
     $tagValue = $OctopusParameters["Octopus.Environment.Name"]
+    Write-Output "    Detected Environment: $tagValue"
 }
 catch {
     $tagValue = $environment
@@ -34,6 +36,7 @@ catch {
 if ($octoUrl -like ""){
     try {
         $octoUrl = $OctopusParameters["Octopus.Web.ServerUri"]
+        Write-Output "    Detected Octopus URL: $octoUrl"
     }
     catch {
         Write-Error "Please provide a value for -octoUrl"
@@ -43,6 +46,7 @@ if ($octoUrl -like ""){
 if ($envId = ""){
     try {
         $envId = $OctopusParameters["Octopus.Environment.Id"]
+        Write-Output "    Detected Octopus Environment: $envId"
     }
     catch {
         Write-Error "Please provide a value for -octoApiKey"
