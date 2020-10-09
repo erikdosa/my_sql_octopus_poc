@@ -52,8 +52,13 @@ Get-Script -script "install_tentacle.ps1"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
 
-# Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
+# Creating SQL logins so that student and octopus can both access SQL Server
+Write-Output "*"
+Get-Script -script "setup_sql_logins.ps1"
+Write-Output "Executing ./setup_sql_logins.ps1 -tag $registerInRoles -value $registerInEnvironments"
+./setup_sql_logins.ps1 -tag $registerInRoles -value $registerInEnvironments
 
+# Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
 Write-Output "*"
 Get-Script -script "install_choco.ps1"
 Write-Output "Executing ./install_choco.ps1"

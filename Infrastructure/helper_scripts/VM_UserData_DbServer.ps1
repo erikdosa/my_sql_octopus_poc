@@ -58,12 +58,6 @@ Get-Script -script "install_sql_server.ps1"
 Write-Output "Executing ./install_sql_server.ps1"
 ./install_sql_server.ps1
 
-# Creating SQL logins so that student and octopus can both access SQL Server
-Write-Output "*"
-Get-Script -script "setup_sql_logins.ps1"
-Write-Output "Executing ./setup_sql_logins.ps1"
-./setup_sql_logins.ps1
-
 # Installing SSMS for convenience. Not required to deploy anything so doing this last to avoid delays.
 Write-Output "*"
 Get-Script -script "install_ssms.ps1"
