@@ -446,7 +446,7 @@ While (-not $allVmsConfigured){
             $currentStatus = "$currentStatus SQL Server: Running |"
         } 
         else {
-            $currentStatus = "$currentStatus SQL Server: Pending,"
+            $currentStatus = "$currentStatus SQL Server: Pending |"
         }
         ## IIS
         $vmsWithIis = ($vms.Select("iis_running = '$true'"))
