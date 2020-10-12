@@ -232,7 +232,7 @@ While (-not $allRunning){
         }
 
         # Logging all the IP addresses
-        Write-Output "    All instances are running!"
+        Write-Output "    SQL Server machine and all web servers are running!"
         Write-Output "      SQL Server: $sqlIp"
         Write-Output "      Web Server(s): $webIps"
         break
