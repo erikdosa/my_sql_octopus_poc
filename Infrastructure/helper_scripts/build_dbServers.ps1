@@ -4,7 +4,7 @@ param(
     $numWebServers = 1,
     $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = "",
-    $sqlOctoPassword = "",
+    [SecureString]$sqlOctoPassword = "",
     $octoUrl = "",
     $envId = "",
     $environment = "Manual run"
@@ -442,9 +442,9 @@ While (-not $allVmsConfigured){
     if (-not $allVmsConfigured){
         # Working out the current status
         ## SQL Server
-        $currentStatus = ""
+        $currentStatus = "        $time seconds - "
         if ($sqlDeployed){
-            $currentStatus = "SQL Server: Running,"
+            $currentStatus = "SQL Server: Running | "
         } 
         else {
             $currentStatus = "SQL Server: Pending,"
@@ -452,7 +452,7 @@ While (-not $allVmsConfigured){
         ## IIS
         $vmsWithIis = ($vms.Select("iis_running = '$true'"))
         $numIisInstalls = $vmsWithIis.count
-        $currentStatus = "$currentStatus IIS Installs: $numIisInstalls / $numWebServers, "
+        $currentStatus = "$currentStatus IIS Installs: $numIisInstalls / $numWebServers | "
         ## Tentacles
         $vmsWithTentacles = ($vms.Select("tentacle_listening = '$true'"))
         $numTentacles = $vmsWithTentacles.count
