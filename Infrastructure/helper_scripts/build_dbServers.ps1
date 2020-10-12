@@ -160,24 +160,51 @@ $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
 if ($dbJumpboxInstances.count -eq 0){
     Write-Output "    SQL Jumpbox required."
 }
-else {
-    if ($deploySql){
-        Write-Output "    Building a new SQL Server instance so need to re-deploy the Jumpbox too..."
-        Write-Output "      Deleting old SQL Jumpbox..."
-        foreach ($jumpbox in $dbJumpboxInstances){
-            Remove-EC2Instance -InstanceId $jumpbox.InstanceId -Force | out-null
-        }
-    } else {
-        Write-Output "    SQL Jumpbox not required."
-        $deployJump = $false
+elseif ($deploySql){
+    Write-Output "    Building a new SQL Server instance so need to re-deploy the Jumpbox too..."
+    Write-Output "      Deleting old SQL Jumpbox(es)..."
+    foreach ($jumpbox in $dbJumpboxInstances){
+        $id = $jumpbox.InstanceId
+        $ip = $jumpbox.PublicIpAddress
+        Write-Output "      Removing instance $id at $ip"
+        Remove-EC2Instance -InstanceId $id -Force | out-null
     }
+} 
+else {
+    Write-Output "    SQL Jumpbox not required."
+    $deployJump = $false
 }
 
+$deployWebServers = $true
+$webServers = Get-Servers -role $webServerRole -includePending
+if (($webServers.count -eq $numWebServers) -and (-not $deploySql)){
+    Write-Output "    No web server deployment required."
+}
+elseif ($deploySql) {
+    Write-Output "    Building a new SQL Server instance so need to re-deploy all web servers too..."
+    Write-Output "      Deleting old web server(s)..."
+    foreach ($webServer in $webInstances){
+        $id = $webServer.InstanceId
+        $ip = $webServer.PublicIpAddress
+        Write-Output "      Removing instance $id at $ip"
+        Remove-EC2Instance -InstanceId $id -Force | out-null
+    }
+} 
+else {
+    Write-Output "    No new web servers required."
+    $deployWebServers = $false
+}
+
+
 # Building all the servers
-Write-Output "    Launching SQL Server"
-Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData 
-Write-Output "    Launching Web Server(s)"
-Build-Servers -role $webServerRole -encodedUserData $webServerUserData -required $numWebServers
+if($deploySql){
+    Write-Output "    Launching SQL Server"
+    Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData 
+}
+if($deployWebServers){
+    Write-Output "    Launching Web Server(s)"
+    Build-Servers -role $webServerRole -encodedUserData $webServerUserData -required $numWebServers    
+}
 
 # Checking all the instances
 $dbServerInstances = Get-Servers -role $dbServerRole -includePending
