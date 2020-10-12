@@ -455,9 +455,14 @@ While (-not $allVmsConfigured){
     forEach ($ip in $pendingTentacles.ip){
         $tentacleDeployed = Test-Tentacle -ip $ip
         if ($tentacleDeployed){
-            Write-Output "      Tentacle is listening on: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["tentacle_listening"] = $true
+            $thisVmRole = "Web server"
+            if ($thisVm[0]["role"] -like "*jump*"){
+                $thisVmRole = "SQL Jumpbox"
+            }
+            Write-Output "      $thisVmRole tentacle is listening on: $ip"
+
         }
     }
 
