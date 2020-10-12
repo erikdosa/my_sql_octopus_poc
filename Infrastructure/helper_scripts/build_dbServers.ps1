@@ -272,7 +272,7 @@ if ($deployJump){
 
             # Logging all the IP addresses
             Write-Output "    SQL Jumpbox is running!"
-            Write-Output "      SQL Jumpox: $jumpIp"
+            Write-Output "      SQL Jumpbox: $jumpIp"
             break
         }
         else {
