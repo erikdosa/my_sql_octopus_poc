@@ -160,7 +160,7 @@ $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
 if ($dbJumpboxInstances.count -eq 0){
     Write-Output "    SQL Jumpbox required."
 }
-elseif ($deploySql){
+elseif (($dbJumpboxInstances.count -gt 0) -and ($deploySql)){
     Write-Output "    Building a new SQL Server instance so need to re-deploy the Jumpbox too..."
     Write-Output "      Deleting old SQL Jumpbox(es)..."
     foreach ($jumpbox in $dbJumpboxInstances){
@@ -180,7 +180,7 @@ $webServers = Get-Servers -role $webServerRole -includePending
 if (($webServers.count -eq $numWebServers) -and (-not $deploySql)){
     Write-Output "    No web server deployment required."
 }
-elseif ($deploySql) {
+elseif (($webServers.count -gt 0) -and ($deploySql)){
     Write-Output "    Building a new SQL Server instance so need to re-deploy all web servers too..."
     Write-Output "      Deleting old web server(s)..."
     foreach ($webServer in $webInstances){
@@ -329,7 +329,7 @@ if ($deployJump){
             break
         }
         else {
-            Write-Output "        Waiting for SQL Junmpbox to start..."
+            Write-Output "      Waiting for SQL Jumpbox to start..."
         }
         Start-Sleep -s 15
     }
