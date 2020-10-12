@@ -186,6 +186,8 @@ if (($webServers.count -gt 0) -and ($deploySql)){
         $ip = $webServer.PublicIpAddress
         Write-Output "      Removing instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
+    }
+    $deployWebServers = $true
 }
 
 $webServers = Get-Servers -role $webServerRole -includePending
