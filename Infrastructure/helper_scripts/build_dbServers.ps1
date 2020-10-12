@@ -438,27 +438,25 @@ While (-not $allVmsConfigured){
     # Getting the time
     $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 
-    if (-not $allVmsConfigured){
-        # Working out the current status
-        ## SQL Server
-        $currentStatus = "        $time seconds -"
-        if ($sqlDeployed){
-            $currentStatus = "$currentStatus SQL Server: Running |"
-        } 
-        else {
-            $currentStatus = "$currentStatus SQL Server: Pending |"
-        }
-        ## IIS
-        $vmsWithIis = ($vms.Select("iis_running = '$true'"))
-        $numIisInstalls = $vmsWithIis.count
-        $currentStatus = "$currentStatus IIS Installs: $numIisInstalls / $numWebServers |"
-        ## Tentacles
-        $vmsWithTentacles = ($vms.Select("tentacle_listening = '$true'"))
-        $numTentacles = $vmsWithTentacles.count
-        $tentaclesRequired = $numWebServers + 1 
-        $currentStatus = "$currentStatus Tentacles deployed: $numTentacles / $tentaclesRequired"
-        Write-Output "        $currentStatus"
+    # Logging the current status
+    ## SQL Server
+    $currentStatus = "        $time seconds -"
+    if ($sqlDeployed){
+        $currentStatus = "$currentStatus SQL Server: Running |"
+    } 
+    else {
+        $currentStatus = "$currentStatus SQL Server: Pending |"
     }
+    ## IIS
+    $vmsWithIis = ($vms.Select("iis_running = '$true'"))
+    $numIisInstalls = $vmsWithIis.count
+    $currentStatus = "$currentStatus IIS Installs: $numIisInstalls / $numWebServers |"
+    ## Tentacles
+    $vmsWithTentacles = ($vms.Select("tentacle_listening = '$true'"))
+    $numTentacles = $vmsWithTentacles.count
+    $tentaclesRequired = $numWebServers + 1 
+    $currentStatus = "$currentStatus Tentacles deployed: $numTentacles / $tentaclesRequired"
+    Write-Output "        $currentStatus"
     
     if ($allVmsConfigured){
         Write-Output "SUCCESS! Environment built successfully."
