@@ -336,7 +336,7 @@ While (-not $allVmsConfigured){
     forEach ($ip in $pendingIisInstalls.ip){
         $iisDeployed = Test-IIS -ip $ip
         if ($iisDeployed){
-            Write-Output "      IIS is running on: $ip"
+            Write-Output "      IIS is running on web server: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["iis_running"] = $true
         }
