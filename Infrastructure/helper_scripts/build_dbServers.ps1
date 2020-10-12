@@ -4,7 +4,6 @@ param(
     $numWebServers = 1,
     $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = "",
-    $sqlSaPassword = "",
     $sqlOctoPassword = "",
     $octoUrl = "",
     $envId = "",
@@ -63,24 +62,13 @@ if ($octoApiKey -like ""){
 }
 
 $checkSql = $true
-if ($sqlSaPassword -like ""){
-    try {
-        $sqlSaPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
-    }
-    catch {
-        Write-Warning "No sa password provided for SQL Server. Skipping check to see if/when SQL Server comes online"
-        $checkSql = $false    
-    }
-}
-
-$checkLogins = $true
 if ($sqlOctoPassword -like ""){
     try {
         $sqlOctoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
     }
     catch {
         Write-Warning "No octopus password provided for SQL Server. Skipping check to see if/when SQL Server comes online"
-        $checkLogins = $false
+        $checkSql = $false
     }
 }
 
@@ -292,7 +280,6 @@ $vms = New-Object System.Data.Datatable
 [void]$vms.Columns.Add("ip")
 [void]$vms.Columns.Add("role")
 [void]$vms.Columns.Add("sql_running")
-[void]$vms.Columns.Add("sql_logins")
 [void]$vms.Columns.Add("iis_running")
 [void]$vms.Columns.Add("tentacle_listening")
 
@@ -300,20 +287,15 @@ $sqlrunning = $null
 if ($checkSql){
     $sqlrunning = $false
 }
-$sqlLogins = $null
-if ($checkLogins){
-    $sqlLogins = $false
-}
-
 
 ForEach ($instance in $runningDbServerInstances){
-    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$sqlrunning,$sqlLogins,$null,$null)
+    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$sqlrunning,$null,$null)
 }
 ForEach ($instance in $runningDbJumpboxInstances){
-    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbJumpboxRole,$null,$null,$null,$false)
+    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbJumpboxRole,$null,$null,$false)
 }
 ForEach ($instance in $runningWebServerInstances){
-    [void]$vms.Rows.Add($instance.PublicIpAddress,$webServerRole,$null,$null,$false,$false)
+    [void]$vms.Rows.Add($instance.PublicIpAddress,$webServerRole,$null,$false,$false)
 }
         
 Write-Output "    Waiting for all instances to complete setup..."
@@ -321,8 +303,7 @@ Write-Output "      Once an instance is running, setup normally takes:"
 Write-Output "        - Jumpbox tentacles: 4 min"
 Write-Output "        - Web server IIS installs: 6-7 min"
 Write-Output "        - Web server tentacles: 7-8 min"
-Write-Output "        - SQL Server install: 9-11 min"
-Write-Output "        - SQL Server logins: 3-4 min after SQL Server install"
+Write-Output "        - SQL Server install: 10-12 min"
 
 # Helper functions to ping the instances
 function Test-SQL {
@@ -375,32 +356,20 @@ function Test-Tentacle {
 # Waiting to see if they all come online
 $allVmsConfigured = $false
 $runningWarningGiven = $false
-$saCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "sa", $sqlSaPassword
 $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $sqlOctoPassword
 $sqlDeployed = $false
 $loginsDeployed = $false
 
 While (-not $allVmsConfigured){
-    # Checking whether anything new has come online
+    # Checking whether anything new has come online    
     ## SQL Server
-    $pendingSqlVms = $vms.Select("sql_running like '$false'")
-    forEach ($ip in $pendingSqlVms.ip){
-        $sqlDeployed = Test-SQL -ip $ip -cred $saCred
-        if ($sqlDeployed){
-            Write-Output "      SQL Server is running on: $ip"
+    $pendingSqlServers = $vms.Select("sql_running like '$false'")
+    forEach ($ip in $pendingSqlServers.ip){
+        $sqlDeployed = Test-SQL -ip $ip -cred $octoCred
+        if ($loginsDeployed){
+            Write-Output "      SQL Server is listening at: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["sql_running"] = $true
-        }
-    }
-    
-    ## SQL Logins
-    $pendingSqlLogins = $vms.Select("sql_logins like '$false'")
-    forEach ($ip in $pendingSqlLogins.ip){
-        $loginsDeployed = Test-SQL -ip $ip -cred $octoCred
-        if ($loginsDeployed){
-            Write-Output "      SQL Server Logins deployed to: $ip"
-            $thisVm = ($vms.Select("ip = '$ip'"))
-            $thisVm[0]["sql_logins"] = $true
         }
     }
 
@@ -446,13 +415,6 @@ While (-not $allVmsConfigured){
         } 
         else {
             $currentStatus = "SQL Server: Pending,"
-        }
-        ## SQL Logins
-        if ($loginsDeployed){
-            $currentStatus = "$currentStatus SQL Logins: Deployed,"
-        } 
-        else {
-            $currentStatus = "$currentStatus SQL Logins: Pending,"
         }
         ## IIS
         $vmsWithIis = ($vms.Select("iis_running = '$true'"))
