@@ -36,18 +36,19 @@ catch {
     $tagValue = $environment
 }
 
+Write-Output "1. octoUrl is: $octoUrl"
 if ($octoUrl -like ""){
     try {
         $octoUrl = $OctopusParameters["Octopus.Web.ServerUri"]
         Write-Output "      Detected Octopus URL: $octoUrl"
-        Write-Output "octoUrl is: $octoUrl"
+        Write-Output "2. octoUrl is: $octoUrl"
     }
     catch {
         Write-Error "Please provide a value for -octoUrl"
     }
 }
 
-Write-Output "octoUrl is: $octoUrl"
+Write-Output "3. octoUrl is: $octoUrl"
 
 if ($envId -like ""){
     try {
