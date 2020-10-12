@@ -149,7 +149,7 @@ $deploySql = $true
 $dbServerInstances = Get-Servers -role $dbServerRole -includePending
 if ($dbServerInstances.count -eq 0){
     Write-Output "    SQL Server required."
-    $deploySql = $false
+    $deploySql = $true
 }
 else {
     Write-Output "    SQL Server not required."
