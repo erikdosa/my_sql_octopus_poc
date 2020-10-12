@@ -144,6 +144,35 @@ Function Build-Servers {
     }    
 }
 
+# Checking to see if SQL Server instance and jumpbox are required
+$deploySql = $true
+$dbServerInstances = Get-Servers -role $dbServerRole -includePending
+if ($dbServerInstances.count -eq 0){
+    Write-Output "    SQL Server required."
+    $deploySql = $false
+}
+else {
+    Write-Output "    SQL Server not required."
+    $deploySql = $false
+}
+$deployJump = $true
+$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
+if ($dbJumpboxInstances.count -eq 0){
+    Write-Output "    SQL Jumpbox required."
+}
+else {
+    if ($deploySql){
+        Write-Output "    Building a new SQL Server instance so need to re-deploy the Jumpbox too..."
+        Write-Output "      Deleting old SQL Jumpbox..."
+        foreach ($jumpbox in $dbJumpboxInstances){
+            Remove-EC2Instance -InstanceId $jumpbox.InstanceId -Force | out-null
+        }
+    } else {
+        Write-Output "    SQL Jumpbox not required."
+        $deployJump = $false
+    }
+}
+
 # Building all the servers
 Write-Output "    Launching SQL Server"
 Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData 
@@ -232,9 +261,11 @@ While (-not $allRunning){
 }
 
 # Now we know the SQL Server IP, we can launch the jumpbox
-Write-Output "    Launching SQL Jumpbox"
-$jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -role $dbJumpboxRole -sql_ip $sqlIp
-Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
+if ($deployJump){
+    Write-Output "    Launching SQL Jumpbox"
+    $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -role $dbJumpboxRole -sql_ip $sqlIp
+    Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
+}
 
 # Installing dbatools PowerShell module so that we can ping sql server instance
 try {
@@ -246,33 +277,35 @@ catch {
     Install-Module dbatools -Force
 }
 
-# Checking to see if the jumpbox came online
-$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
-if ($dbJumpboxInstances.count -ne 1){
-    $instancesFailed = $true
-    $num = $dbJumpboxInstances.count
-    $errMsg = "$errMsg Expected 1 SQL Jumpbox instance but have $num instance(s)."
-}
-$jumpboxRunning = $false
-$runningDbJumpboxInstances = @()
-While (-not $jumpboxRunning){
-
-    $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
-    $NumRunning = $runningDbJumpboxInstances.count
-
-    if ($NumRunning -eq 1){
-        $jumpboxRunning = $true
-        $jumpIp = $runningDbJumpboxInstances[0].PublicIpAddress
-
-        # Logging all the IP addresses
-        Write-Output "    SQL Jumpbox is running!"
-        Write-Output "      SQL Jumpox: $jumpIp"
-        break
+if ($deployJump){
+    # Checking to see if the jumpbox came online
+    $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
+    if ($dbJumpboxInstances.count -ne 1){
+        $instancesFailed = $true
+        $num = $dbJumpboxInstances.count
+        $errMsg = "$errMsg Expected 1 SQL Jumpbox instance but have $num instance(s)."
     }
-    else {
-        Write-Output "        Waiting for SQL Junmpbox to start..."
+    $jumpboxRunning = $false
+    $runningDbJumpboxInstances = @()
+    While (-not $jumpboxRunning){
+
+        $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
+        $NumRunning = $runningDbJumpboxInstances.count
+
+        if ($NumRunning -eq 1){
+            $jumpboxRunning = $true
+            $jumpIp = $runningDbJumpboxInstances[0].PublicIpAddress
+
+            # Logging all the IP addresses
+            Write-Output "    SQL Jumpbox is running!"
+            Write-Output "      SQL Jumpox: $jumpIp"
+            break
+        }
+        else {
+            Write-Output "        Waiting for SQL Junmpbox to start..."
+        }
+        Start-Sleep -s 15
     }
-    Start-Sleep -s 15
 }
 
 # Populating our table of VMs
