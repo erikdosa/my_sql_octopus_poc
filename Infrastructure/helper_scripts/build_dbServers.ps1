@@ -441,17 +441,17 @@ While (-not $allVmsConfigured){
     if (-not $allVmsConfigured){
         # Working out the current status
         ## SQL Server
-        $currentStatus = "        $time seconds - "
+        $currentStatus = "        $time seconds -"
         if ($sqlDeployed){
-            $currentStatus = "SQL Server: Running | "
+            $currentStatus = "$currentStatus SQL Server: Running |"
         } 
         else {
-            $currentStatus = "SQL Server: Pending,"
+            $currentStatus = "$currentStatus SQL Server: Pending,"
         }
         ## IIS
         $vmsWithIis = ($vms.Select("iis_running = '$true'"))
         $numIisInstalls = $vmsWithIis.count
-        $currentStatus = "$currentStatus IIS Installs: $numIisInstalls / $numWebServers | "
+        $currentStatus = "$currentStatus IIS Installs: $numIisInstalls / $numWebServers |"
         ## Tentacles
         $vmsWithTentacles = ($vms.Select("tentacle_listening = '$true'"))
         $numTentacles = $vmsWithTentacles.count
