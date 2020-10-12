@@ -13,11 +13,13 @@ param(
 $ErrorActionPreference = "Stop"
 $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
 
+Write-Output "    Auto-filling missing parameters from Octopus System Variables..."
+
 # Initialising variables
 $rolePrefix = ""
 try {
     $rolePrefix = $OctopusParameters["Octopus.Project.Name"]
-    Write-Output "    Detected Octopus Project: $rolePrefix"
+    Write-Output "      Detected Octopus Project: $rolePrefix"
 }
 catch {
     $rolePrefix = "RandomQuotes_SQL"
@@ -26,7 +28,7 @@ catch {
 $tagValue = ""
 try {
     $tagValue = $OctopusParameters["Octopus.Environment.Name"]
-    Write-Output "    Detected Octopus Environment Name: $tagValue"
+    Write-Output "      Detected Octopus Environment Name: $tagValue"
 }
 catch {
     $tagValue = $environment
@@ -35,7 +37,7 @@ catch {
 if ($octoUrl -like ""){
     try {
         $octoUrl = $OctopusParameters["Octopus.Web.ServerUri"]
-        Write-Output "    Detected Octopus URL: $octoUrl"
+        Write-Output "      Detected Octopus URL: $octoUrl"
     }
     catch {
         Write-Error "Please provide a value for -octoUrl"
@@ -45,7 +47,7 @@ if ($octoUrl -like ""){
 if ($envId -like ""){
     try {
         $envId = $OctopusParameters["Octopus.Environment.Id"]
-        Write-Output "    Detected Octopus Environment ID: $envId"
+        Write-Output "      Detected Octopus Environment ID: $envId"
     }
     catch {
         Write-Error "Please provide a value for -envId"
@@ -144,34 +146,36 @@ Function Build-Servers {
     }    
 }
 
+Write-Output "    Checking infrastructure that's already running..."
+
 # Checking to see if SQL Server instance and jumpbox are required
 $deploySql = $true
 $dbServerInstances = Get-Servers -role $dbServerRole -includePending
 if ($dbServerInstances.count -eq 0){
-    Write-Output "    SQL Server required."
+    Write-Output "      SQL Server deployment is required."
     $deploySql = $true
 }
 else {
-    Write-Output "    SQL Server not required."
+    Write-Output "      SQL Server is already running."
     $deploySql = $false
 }
 $deployJump = $true
 $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
 if ($dbJumpboxInstances.count -eq 0){
-    Write-Output "    SQL Jumpbox required."
+    Write-Output "      SQL Jumpbox required."
 }
 elseif (($dbJumpboxInstances.count -gt 0) -and ($deploySql)){
-    Write-Output "    Building a new SQL Server instance so need to re-deploy the Jumpbox too..."
-    Write-Output "      Deleting old SQL Jumpbox(es)..."
+    Write-Output "      Building a new SQL Server instance so need to re-deploy the Jumpbox too..."
+    Write-Output "        Deleting old SQL Jumpbox(es)..."
     foreach ($jumpbox in $dbJumpboxInstances){
         $id = $jumpbox.InstanceId
         $ip = $jumpbox.PublicIpAddress
-        Write-Output "      Removing instance $id at $ip"
+        Write-Output "        Removing instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
     }
 } 
 else {
-    Write-Output "    SQL Jumpbox not required."
+    Write-Output "      SQL Jumpbox already deployed."
     $deployJump = $false
 }
 
@@ -179,12 +183,12 @@ $deployWebServers = $true
 $webServers = Get-Servers -role $webServerRole -includePending
 
 if (($webServers.count -gt 0) -and ($deploySql)){
-    Write-Output "    Building a new SQL Server instance so need to re-deploy all web servers too..."
-    Write-Output "      Deleting old web server(s)..."
+    Write-Output "      Building a new SQL Server instance so need to re-deploy all web servers too..."
+    Write-Output "        Deleting old web server(s)..."
     foreach ($webServer in $webInstances){
         $id = $webServer.InstanceId
         $ip = $webServer.PublicIpAddress
-        Write-Output "      Removing instance $id at $ip"
+        Write-Output "        Removing instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
     }
     $deployWebServers = $true
@@ -192,7 +196,7 @@ if (($webServers.count -gt 0) -and ($deploySql)){
 
 $webServers = Get-Servers -role $webServerRole -includePending
 if (($webServers.count -eq $numWebServers) -and (-not $deploySql)){
-    Write-Output "    No web server deployment required."
+    Write-Output "      No additional web servers required."
     $deployWebServers = $false
 }
 if ($webServers.count -gt $numWebServers){
@@ -362,11 +366,11 @@ ForEach ($instance in $runningWebServerInstances){
 }
         
 Write-Output "    Waiting for all instances to complete setup..."
-Write-Output "      Once an instance is running, setup normally takes:"
-Write-Output "        - Jumpbox tentacles: 4 min"
-Write-Output "        - Web server IIS installs: 6-7 min"
-Write-Output "        - Web server tentacles: 7-8 min"
-Write-Output "        - SQL Server install: 10-12 min"
+Write-Output "      Once an instance is running, setup usually takes roughly:"
+Write-Output "        - Jumpbox tentacles: 270-330 seconds"
+Write-Output "        - Web server IIS installs: 350-400 seconds"
+Write-Output "        - Web server tentacles: 450-500 seconds"
+Write-Output "        - SQL Server install: 600-750 seconds"
 
 # Helper functions to ping the instances
 function Test-SQL {
