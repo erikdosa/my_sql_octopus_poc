@@ -399,7 +399,7 @@ While (-not $allVmsConfigured){
     $pendingSqlServers = $vms.Select("sql_running like '$false'")
     forEach ($ip in $pendingSqlServers.ip){
         $sqlDeployed = Test-SQL -ip $ip -cred $octoCred
-        if ($loginsDeployed){
+        if ($sqlDeployed){
             Write-Output "      SQL Server is listening at: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["sql_running"] = $true
