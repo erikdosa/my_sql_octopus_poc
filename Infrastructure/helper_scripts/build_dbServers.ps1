@@ -185,7 +185,7 @@ $webServers = Get-Servers -role $webServerRole -includePending
 if (($webServers.count -gt 0) -and ($deploySql)){
     Write-Output "      Building a new SQL Server instance so need to re-deploy all web servers too..."
     Write-Output "        Deleting old web server(s)..."
-    foreach ($webServer in $webInstances){
+    foreach ($webServer in $webServers){
         $id = $webServer.InstanceId
         $ip = $webServer.PublicIpAddress
         Write-Output "        Removing instance $id at $ip"
