@@ -179,6 +179,7 @@ $deployWebServers = $true
 $webServers = Get-Servers -role $webServerRole -includePending
 if (($webServers.count -eq $numWebServers) -and (-not $deploySql)){
     Write-Output "    No web server deployment required."
+    $deployWebServers = $false
 }
 elseif (($webServers.count -gt 0) -and ($deploySql)){
     Write-Output "    Building a new SQL Server instance so need to re-deploy all web servers too..."
@@ -189,12 +190,16 @@ elseif (($webServers.count -gt 0) -and ($deploySql)){
         Write-Output "      Removing instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
     }
-} 
+}
 else {
     Write-Output "    No new web servers required."
     $deployWebServers = $false
 }
 
+if ($webServers.count -gt $numWebServers){
+    Write-Warning "More web servers are already deployed than are necesary."
+    $deployWebServers = $false
+} 
 
 # Building all the servers
 if($deploySql){
