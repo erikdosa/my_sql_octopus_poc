@@ -4,7 +4,7 @@ param(
     $numWebServers = 1,
     $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = "",
-    [SecureString]$sqlOctoPassword = "",
+    $sqlOctoPassword = "",
     $octoUrl = "",
     $envId = "",
     $environment = "Manual run"
@@ -391,7 +391,6 @@ $allVmsConfigured = $false
 $runningWarningGiven = $false
 $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $sqlOctoPassword
 $sqlDeployed = $false
-$loginsDeployed = $false
 
 While (-not $allVmsConfigured){
     # Checking whether anything new has come online    
