@@ -80,9 +80,11 @@ $webServerRole = "$rolePrefix-WebServer"
 $dbServerRole = "$rolePrefix-DbServer"
 $dbJumpboxRole = "$rolePrefix-DbJumpbox"
 
+$octoApiHeader = @{ "X-Octopus-ApiKey" = $octoApiKey }
+
 # Reading and encoding the VM startup scripts
-$webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -role $webServerRole
-$dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -role $dbServerRole
+$webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -octoUrl $octoUrl -role $webServerRole
+$dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -octoUrl $octoUrl -role $dbServerRole
 
 Write-Output "    Checking infrastructure that's already running..."
 
@@ -235,7 +237,7 @@ While (-not $allRunning){
 # Now we know the SQL Server IP, we can launch the jumpbox
 if ($deployJump){
     Write-Output "    Launching SQL Jumpbox"
-    $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -role $dbJumpboxRole -sql_ip $sqlIp
+    $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -octoUrl $octoUrl -role $dbJumpboxRole -sql_ip $sqlIp
     Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
 }
 
@@ -343,7 +345,7 @@ While (-not $allVmsConfigured){
     ## Tentacles
     $pendingTentacles = $vms.Select("tentacle_listening like '$false'")
     forEach ($ip in $pendingTentacles.ip){
-        $tentacleDeployed = Test-Tentacle -ip $ip
+        $tentacleDeployed = Test-Tentacle -octoUrl $octoUrl -envId $envId -ip $ip -header $octoApiHeader
         if ($tentacleDeployed){
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["tentacle_listening"] = $true

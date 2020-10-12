@@ -3,6 +3,7 @@
 Function Get-UserData {
     param (
         $fileName,
+        $octoUrl,
         $role,
         $sql_ip = "unknown"
     )
@@ -95,9 +96,11 @@ function Test-IIS {
 
 function Test-Tentacle {
     param (
-        $ip
+        $octoUrl,
+        $envId,
+        $ip,
+        $header
     )
-    $header = @{ "X-Octopus-ApiKey" = $octoApiKey }
     $uri = "https://" + $ip + ":10933/"
     $environmentMachines = "/api/Spaces-1/environments/$envId/machines"
     $machines = ((Invoke-WebRequest ($octoUrl + $environmentMachines) -Headers $header -UseBasicParsing).content | ConvertFrom-Json).items
