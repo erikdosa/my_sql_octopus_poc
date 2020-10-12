@@ -92,7 +92,8 @@ $dbJumpboxRole = "$rolePrefix-DbJumpbox"
 Function Get-UserData {
     param (
         $fileName,
-        $role
+        $role,
+        $sql_ip = "unknown"
     )
     
     # retrieving raw source code
@@ -106,6 +107,7 @@ Function Get-UserData {
     $userData = $userData.replace("__OCTOPUSURL__",$octoUrl)
     $userData = $userData.replace("__ENV__",$tagValue)
     $userData = $userData.replace("__ROLE__",$role)
+    $userData = $userData.replace("__SQLSERVERIP__",$sql_ip)
 
     # Base 64 encoding the userdata file (required by EC2)
     $encodedDbUserData = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($userData))
@@ -117,7 +119,6 @@ Function Get-UserData {
 # Reading and encoding the VM startup scripts
 $webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -role $webServerRole
 $dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -role $dbServerRole
-$jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -role $dbJumpboxRole
 
 # Helper function to get all the existing servers of a particular role
 Function Get-Servers {
@@ -158,8 +159,6 @@ Function Build-Servers {
 # Building all the servers
 Write-Output "    Launching SQL Server"
 Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData 
-Write-Output "    Launching SQL Jumpbox"
-Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
 Write-Output "    Launching Web Server(s)"
 Build-Servers -role $webServerRole -encodedUserData $webServerUserData -required $numWebServers
 
@@ -219,15 +218,16 @@ $allRunning = $false
 $runningDbServerInstances = @()
 $runningDbJumpboxInstances = @()
 $runningWebServerInstances = @()
+$sqlIp = ""
 
 While (-not $allRunning){
-    $totalRequired = $numWebServers + 2 # Web Servers + Jumpbox + SQL Server
+    $totalRequired = $numWebServers + 1 # Web Servers + SQL Server.
+                                        # We'll launch the jumpbox after we know the SQL IP address.
 
     $runningDbServerInstances = Get-Servers -role $dbServerRole
-    $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
     $runningWebServerInstances = Get-Servers -role $webServerRole
 
-    $NumRunning = $runningDbServerInstances.count +  $runningDbJumpboxInstances.count + $runningWebServerInstances.count
+    $NumRunning = $runningDbServerInstances.count + $runningWebServerInstances.count
 
     if ($NumRunning -eq ($totalRequired)){
         $allRunning = $true
@@ -248,7 +248,6 @@ While (-not $allRunning){
         # Logging all the IP addresses
         Write-Output "    All instances are running!"
         Write-Output "      SQL Server: $sqlIp"
-        Write-Output "      SQL Jumpox: $jumpIp"
         Write-Output "      Web Server(s): $webIps"
         break
     }
@@ -258,6 +257,11 @@ While (-not $allRunning){
     Start-Sleep -s 15
 }
 
+# Now we know the SQL Server IP, we can launch the jumpbox
+Write-Output "    Launching SQL Jumpbox"
+$jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -role $dbJumpboxRole -sql_ip $sqlIp
+Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
+
 # Installing dbatools PowerShell module so that we can ping sql server instance
 try {
     Import-Module dbatools
@@ -266,6 +270,28 @@ catch {
     Write-Output "    Installing dbatools so that we can ping SQL Server..."
     Write-Output "      (This takes a couple of minutes)"
     Install-Module dbatools -Force
+}
+
+$jumpboxRunning = $false
+While (-not $jumpboxRunning){
+
+    $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
+
+    $NumRunning = $runningDbJumpboxInstances.count
+
+    if ($NumRunning -eq 1){
+        $jumpboxRunning = $true
+        $jumpIp = $runningDbJumpboxInstances[0].PublicIpAddress
+
+        # Logging all the IP addresses
+        Write-Output "    SQL Jumpbox is running!"
+        Write-Output "      SQL Jumpox: $jumpIp"
+        break
+    }
+    else {
+        Write-Output "        Waiting for SQL Junmpbox to start..."
+    }
+    Start-Sleep -s 15
 }
 
 # Populating our table of VMs

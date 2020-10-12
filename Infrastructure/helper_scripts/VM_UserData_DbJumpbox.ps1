@@ -46,6 +46,7 @@ Write-Output "Executing ./setup_users.ps1"
 $octopusServerUrl = "__OCTOPUSURL__"
 $registerInEnvironments = "__ENV__"
 $registerInRoles = "__ROLE__"
+$sqlServerIp = "__SQLSERVERIP__"
 
 Write-Output "*"
 Get-Script -script "install_tentacle.ps1"
@@ -56,7 +57,7 @@ Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerU
 Write-Output "*"
 Get-Script -script "setup_sql_logins.ps1"
 Write-Output "Executing ./setup_sql_logins.ps1 -tag $registerInRoles -value $registerInEnvironments"
-./setup_sql_logins.ps1 -tag $registerInRoles -value $registerInEnvironments
+./setup_sql_logins.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp
 
 # Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
 Write-Output "*"

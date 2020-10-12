@@ -1,6 +1,7 @@
 param(
     $tag = "", 
-    $value = ""
+    $value = "",
+    [Parameter(Mandatory=$true)]$SQLServer = ""
 )
 
 # Function to securely retrieve secrets from AWS Secrets Manager
@@ -12,11 +13,6 @@ function get-secret(){
   $cleanedSecret = $splitValue[3]
   return $cleanedSecret
 }
-
-# Retrieving the IP Address for SQL Server
-$acceptableStates = @("pending", "running")
-$instances = (Get-EC2Instance -Filter @{Name="tag:$tag";Values="$value"}, @{Name="instance-state-name";Values=$acceptableStates}).Instances 
-$sqlIpAddress = $instances[0].PublicIpAddress
 
 Write-Output "  Getting sql passwords from AWS Secrets Manager"
 $studentPassword = Get-Secret -secret "STUDENT_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
@@ -37,20 +33,23 @@ $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
 while ($sqlOnline -like $false){
   $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
   try { 
-    Invoke-DbaQuery -SqlInstance $sqlIpAddress -Query 'SELECT @@version' -SqlCredential $cred -EnableException -QueryTimeout 1
+    Invoke-DbaQuery -SqlInstance $SQLServer -Query 'SELECT @@version' -SqlCredential $cred -EnableException -QueryTimeout 1
     Write-Output "    SQL Server is responding."
     $sqlOnline = $true
   }
   catch {
     Write-Output "        $time seconds: Waiting for SQL Server to come online..."
   }
+  if ($time -gt 1200){
+    Write-Error "$time seconds: SQL Server is taking too long to come online. Something is wrong."
+  }
   Start-Sleep -s 5
 }
 
 Write-Output "  Creating student and octopus logins."
-New-DbaLogin -SqlInstance $sqlIpAddress -Login student -SecurePassword $studentPassword -SqlCredential $cred
-New-DbaLogin -SqlInstance $sqlIpAddress -Login octopus -SecurePassword $octopusPassword -SqlCredential $cred
+New-DbaLogin -SqlInstance $SQLServer -Login student -SecurePassword $studentPassword -SqlCredential $cred
+New-DbaLogin -SqlInstance $SQLServer -Login octopus -SecurePassword $octopusPassword -SqlCredential $cred
 
 Write-Output "  Making both student and octopus logins SysAdmins."
-Set-DbaLogin -SqlInstance $sqlIpAddress -Login student -AddRole "sysadmin" -SqlCredential $cred
-Set-DbaLogin -SqlInstance $sqlIpAddress -Login octopus -AddRole "sysadmin" -SqlCredential $cred
+Set-DbaLogin -SqlInstance $SQLServer -Login student -AddRole "sysadmin" -SqlCredential $cred
+Set-DbaLogin -SqlInstance $SQLServer -Login octopus -AddRole "sysadmin" -SqlCredential $cred
