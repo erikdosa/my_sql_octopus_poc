@@ -371,7 +371,7 @@ While (-not $allVmsConfigured){
 
     # Logging the current status
     ## SQL Server
-    $currentStatus = "        $time seconds |"
+    $currentStatus = "$time seconds |"
     if ($sqlDeployed){
         $currentStatus = "$currentStatus SQL Server: Running -"
     } 
