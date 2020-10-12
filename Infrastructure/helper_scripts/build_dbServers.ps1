@@ -219,7 +219,6 @@ While (-not $allRunning){
     if ($NumRunning -eq ($totalRequired)){
         $allRunning = $true
         $sqlIp = $runningDbServerInstances[0].PublicIpAddress
-        $jumpIp = $runningDbJumpboxInstances[0].PublicIpAddress
 
         $webIps = ""
         ForEach ($instance in $runningWebServerInstances){
@@ -271,7 +270,6 @@ $runningDbJumpboxInstances = @()
 While (-not $jumpboxRunning){
 
     $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
-
     $NumRunning = $runningDbJumpboxInstances.count
 
     if ($NumRunning -eq 1){
