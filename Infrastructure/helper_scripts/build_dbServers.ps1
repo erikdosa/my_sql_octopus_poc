@@ -164,7 +164,6 @@ Build-Servers -role $webServerRole -encodedUserData $webServerUserData -required
 
 # Checking all the instances
 $dbServerInstances = Get-Servers -role $dbServerRole -includePending
-$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
 $webServerInstances = Get-Servers -role $webServerRole -includePending
 
 # Logging all the instance details
@@ -173,12 +172,6 @@ ForEach ($instance in $dbServerInstances){
     $id = $instance.InstanceId
     $state = $instance.State.Name
     Write-Output "        SQL Server $id is in state: $state"
-}
-
-ForEach ($instance in $dbJumpboxInstances){
-    $id = $instance.InstanceId
-    $state = $instance.State.Name
-    Write-Output "        SQL Jumpbox $id is in state: $state"
 }
 
 ForEach ($instance in $webServerInstances){
@@ -194,11 +187,6 @@ if ($dbServerInstances.count -ne 1){
     $instancesFailed = $true
     $num = $dbServerInstances.count
     $errMsg = "$errMsg Expected 1 SQL Server instance but have $num instance(s)."
-}
-if ($dbJumpboxInstances.count -ne 1){
-    $instancesFailed = $true
-    $num = $dbJumpboxInstances.count
-    $errMsg = "$errMsg Expected 1 SQL Jumpbox instance but have $num instance(s)."
 }
 if ($webServerInstances.count -ne $numWebServers){
     $instancesFailed = $true
@@ -216,7 +204,6 @@ Write-Output "      Waiting for instances to start... (This normally takes about
 
 $allRunning = $false
 $runningDbServerInstances = @()
-$runningDbJumpboxInstances = @()
 $runningWebServerInstances = @()
 $sqlIp = ""
 
@@ -272,7 +259,15 @@ catch {
     Install-Module dbatools -Force
 }
 
+# Checking to see if the jumpbox came online
+$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
+if ($dbJumpboxInstances.count -ne 1){
+    $instancesFailed = $true
+    $num = $dbJumpboxInstances.count
+    $errMsg = "$errMsg Expected 1 SQL Jumpbox instance but have $num instance(s)."
+}
 $jumpboxRunning = $false
+$runningDbJumpboxInstances = @()
 While (-not $jumpboxRunning){
 
     $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
