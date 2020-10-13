@@ -131,7 +131,13 @@ if ($deploySql -and (-not $deployJump)){
     $killJump = $true
     $deployJump = $true    
 }
-else {
+if ($existingVmsHash.jumpVms -gt 1){
+    $totalJumpboxes = $existingVmsHash.jumpVms
+    Write-Warning "Looks like we already have $totalJumpboxes jumpboxes, but we only want 1. Will kill them all and re-deploy"
+    $killJump = $true
+    $deployJump = $true 
+}
+if (-not $deployJump) {
     Write-Output "        SQL Jumpbox is already running."
 }
 
@@ -153,14 +159,16 @@ if ($requiredVmsHash.webVms -eq $existingVmsHash.webVms){
 ##########     3. Removing everything that needs to be deleted     ##########
 
 if ($killJump){
-    Write-Output "      Removing the existing SQL Jumpbox."
+    Write-Output "      Removing the existing SQL Jumpbox(es)."
     $jumpServers = Get-Servers -role $dbJumpboxRole -includePending
-    $id = $jumpServers[0].InstanceId
-    $ip = $jumpServers[0].PublicIpAddress    
-    Write-Output "        Removing EC2 instance $id at $ip."
-    Remove-EC2Instance -InstanceId $id -Force | out-null
-    Write-Output "        Removing Octopus Target for $ip."
-    Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
+    foreach ($jumpServer in $jumpServers){
+        $id = $jumpServer.InstanceId
+        $ip = $jumpServer.PublicIpAddress 
+        Write-Output "        Removing EC2 instance $id at $ip."
+        Remove-EC2Instance -InstanceId $id -Force | out-null
+        Write-Output "        Removing Octopus Target for $ip."
+        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader                
+    }
 }
 if ($webServersToKill -gt 0){
     Write-Output "      Removing $webServersToKill web servers."
