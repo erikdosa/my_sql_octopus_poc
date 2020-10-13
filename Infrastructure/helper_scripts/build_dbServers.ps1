@@ -441,7 +441,6 @@ While (-not $allVmsConfigured){
         }
     }
     if ($allVmsConfigured){
-        Write-Output "      All VMs are running successfully."
         break
     }
 
