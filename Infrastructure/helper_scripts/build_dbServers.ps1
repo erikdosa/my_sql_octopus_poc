@@ -360,7 +360,7 @@ ForEach ($instance in $runningWebServerInstances){
 
 # So that anyone executing this runbook has a rough idea how long they can expect to wait
 Write-Output "    Waiting for all instances to complete setup..."
-Write-Output "      Once an instance is running, setup usually takes roughly:"
+Write-Output "      Setup usually takes roughly:"
 Write-Output "         - SQL Jumpbox tentacles:     270-330 seconds"
 Write-Output "         - Web server IIS installs:   350-400 seconds"
 Write-Output "         - Web server tentacles:      450-500 seconds"
