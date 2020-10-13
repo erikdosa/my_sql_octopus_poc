@@ -123,7 +123,7 @@ if ($numOfInstancesToKill -ne 0){
     # Using AWS PowerShell to kill all the target instances
     ForEach ($instance in $instancesToKill){
         $id = $instance.InstanceId
-        Write-Output "      Terminating instance $id"
+        Write-Output "      Terminating EC2 instance $id"
         Remove-EC2Instance -InstanceId $id -Force | out-null
     }
     

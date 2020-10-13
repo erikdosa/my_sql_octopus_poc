@@ -110,7 +110,7 @@ elseif (($dbJumpboxInstances.count -gt 0) -and ($deploySql)){
     foreach ($jumpbox in $dbJumpboxInstances){
         $id = $jumpbox.InstanceId
         $ip = $jumpbox.PublicIpAddress
-        Write-Output "        Removing instance $id at $ip"
+        Write-Output "          Removing EC2 instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
         Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
     }
@@ -129,7 +129,7 @@ if (($webServers.count -gt 0) -and ($deploySql)){
     foreach ($webServer in $webServers){
         $id = $webServer.InstanceId
         $ip = $webServer.PublicIpAddress
-        Write-Output "        Removing instance $id at $ip"
+        Write-Output "          Removing EC2 instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
         Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
     }
