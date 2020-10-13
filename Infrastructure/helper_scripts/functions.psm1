@@ -76,10 +76,9 @@ function Remove-OctopusMachine {
     $id = $targetMachine.Id
     try {
         Invoke-RestMethod -Uri "$octoUrl/api/machines/$id" -Headers $octoApiHeader -Method Delete
-        return $true
     }
     catch {
-        return $false
+        return "Failed to delete Octopus Target with id: $id. Perhaps it doesn't exits?"
     }    
 }
 
