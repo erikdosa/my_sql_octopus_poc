@@ -185,6 +185,6 @@ function Write-InfraInventory {
         return $returnString
     }
     catch {
-        Write-Error "VM hash not in the write format. Try using either the Get-CurrentInfraTotals or Get-RequiredInfraTotals cmdlets to create it."
+        Write-Error "VM hash not in the correct format. Try using either the Get-CurrentInfraTotals or Get-RequiredInfraTotals cmdlets to create it."
     }
 }
