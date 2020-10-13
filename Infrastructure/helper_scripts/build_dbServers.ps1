@@ -108,7 +108,7 @@ else {
 }
 # Calculating jump boxes
 $deployJump = $false
-if ($existingVmsHash.sqlVms -eq 0){
+if ($existingVmsHash.jumpVms -eq 0){
     Write-Output "        SQL Jumpbox deployment is required."
     $deployJump = $true
 }
