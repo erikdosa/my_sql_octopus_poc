@@ -86,69 +86,72 @@ $octoApiHeader = @{ "X-Octopus-ApiKey" = $octoApiKey }
 $webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -octoUrl $octoUrl -role $webServerRole
 $dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -octoUrl $octoUrl -role $dbServerRole
 
-Write-Output "    Checking infrastructure that's already running..."
+Write-Output "    Checking required infrastucture changes..."
 
-# Checking to see if SQL Server instance and jumpbox are required
-$deploySql = $true
-$dbServerInstances = Get-Servers -role $dbServerRole -includePending
-if ($dbServerInstances.count -eq 0){
-    Write-Output "      SQL Server deployment is required."
+# Calculating the total infra requirement
+$existingVmsHash = Get-ExistingInfraTotals -environment $tagValue -rolePrefix $rolePrefix
+$writeableExistingVms = Write-InfraInventory -vmHash $existingVmsHash
+Write-Output "      Existing VMs: $writeableExistingVms"
+
+$requiredVmsHash = Get-RequiredInfraTotals -numWebServers $numWebServers
+$writeableRequiredVms = Write-InfraInventory -vmHash $requiredVmsHash
+Write-Output "      Required VMs: $writeableRequiredVms"
+
+# Calculating SQL
+$deploySql = $false
+if ($existingVmsHash.sqlVms -eq 0){
+    Write-Output "        SQL Server deployment is required."
     $deploySql = $true
 }
 else {
-    Write-Output "      SQL Server is already running."
-    $deploySql = $false
+    Write-Output "        SQL Server is already running."
 }
-$deployJump = $true
-$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
-if ($dbJumpboxInstances.count -eq 0){
-    Write-Output "      SQL Jumpbox required."
+# Calculating jump boxes
+$deployJump = $false
+if ($existingVmsHash.sqlVms -eq 0){
+    Write-Output "        SQL Jumpbox deployment is required."
+    $deployJump = $true
 }
-elseif (($dbJumpboxInstances.count -gt 0) -and ($deploySql)){
-    Write-Output "      Building a new SQL Server instance so need to re-deploy the Jumpbox too..."
-    Write-Output "        Deleting old SQL Jumpbox(es)..."
-    foreach ($jumpbox in $dbJumpboxInstances){
-        $id = $jumpbox.InstanceId
-        $ip = $jumpbox.PublicIpAddress
-        Write-Output "          Removing EC2 instance $id at $ip"
-        Remove-EC2Instance -InstanceId $id -Force | out-null
-        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
-    }
-} 
 else {
-    Write-Output "      SQL Jumpbox already deployed."
-    $deployJump = $false
+    Write-Output "        SQL Jumpbox is already running."
 }
 
-$deployWebServers = $true
-$webServers = Get-Servers -role $webServerRole -includePending
-
-if (($webServers.count -gt 0) -and ($deploySql)){
-    Write-Output "      Building a new SQL Server instance so need to re-deploy all web servers too..."
-    Write-Output "        Deleting old web server(s)..."
+# Calculating web servers
+$deployWebServers = $false
+if (($deploySql) -and ($requiredVmsHash.webVms -gt 0)){
+    Write-Output "        Building a new SQL Server instance so need to re-deploy all web servers too..."
+    Write-Output "          Deleting all old web server(s)..."
+    $webServers = Get-Servers -role $webServerRole -includePending
     foreach ($webServer in $webServers){
         $id = $webServer.InstanceId
         $ip = $webServer.PublicIpAddress
-        Write-Output "          Removing EC2 instance $id at $ip"
+        Write-Output "            Removing EC2 instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
         Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
     }
+    $totalRequired = $requiredVmsHash.webVms
+    Write-Output "        $totalRequired new web servers required."
     $deployWebServers = $true
 }
-
-$webServers = Get-Servers -role $webServerRole -includePending
-if (($webServers.count -eq $numWebServers) -and (-not $deploySql)){
-    Write-Output "      No additional web servers required."
-    $deployWebServers = $false
+if ((-not $deploySql) -and ($requiredVmsHash.webVms -gt $existingVmsHash.webVms)){
+    $totalRequired = $requiredVmsHash.webVms - $existingVmsHash.webVms
+    Write-Output "        $totalRequired new web servers required."
+    $deployWebServers = $true    
 }
-if ($webServers.count -gt $numWebServers){
-    Write-Warning "More web servers are already deployed than are necesary."
-} 
+if ($requiredVmsHash.webVms -eq $existingVmsHash.webVms){
+    $totalRequired = $requiredVmsHash.webVms - $existingVmsHash.webVms
+    Write-Output "        No additional web servers required."
+}
+if ((-not $deploySql) -and ($requiredVmsHash.webVms -lt $existingVmsHash.webVms)){
+    $totalRequired = $existingVmsHash.webVms - $requiredVmsHash.webVms
+    Write-Warning "$totalRequired more web servers are already deployed than are necesary. This runbook will ignore the web servers."
+}
 
 # Building all the servers
 if($deploySql){
     Write-Output "    Launching SQL Server"
-    Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData 
+    Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData
+    Write-Output "    (Waiting to launch SQL jumpbox server until we have an IP address for SQL Server instance)." 
 }
 if($deployWebServers){
     Write-Output "    Launching Web Server(s)"
@@ -392,7 +395,7 @@ While (-not $allVmsConfigured){
     Write-Output "        $currentStatus"
     
     if ($allVmsConfigured){
-        Write-Output "SUCCESS! Environment built successfully."
+        Write-Output "      All VMs are running successfully."
         break
     }
     if (($time -gt 1200) -and (-not $runningWarningGiven)){
@@ -405,3 +408,32 @@ While (-not $allVmsConfigured){
     }   
     Start-Sleep -s 10
 }
+
+Write-Output "    Verifying iinfrastructure:"
+
+# Calculating the total infra requirement
+$existingVmsHash = Get-ExistingInfraTotals -environment $tagValue -rolePrefix $rolePrefix
+$writeableExistingVms = Write-InfraInventory -vmHash $existingVmsHash
+Write-Output "      Existing VMs: $writeableExistingVms"
+
+$requiredVmsHash = Get-RequiredInfraTotals -numWebServers $numWebServers
+$writeableRequiredVms = Write-InfraInventory -vmHash $requiredVmsHash
+Write-Output "      Required VMs: $writeableRequiredVms"
+
+$runningDbServerInstances = Get-Servers -role $dbServerRole
+$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
+$runningWebServerInstances = Get-Servers -role $webServerRole
+Write-Output "        SQL Server:  " + $runningDbServerInstances[0].PublicIpAddress
+Write-Output "        SQL Jumpbox: " + $dbJumpboxInstances[0].PublicIpAddress
+ForEach ($instance in $runningWebServerInstances){
+    Write-Output "        Web server: " + $instance.PublicIpAddress
+}
+
+# And did it work?
+if ($writeableRequiredVms -like $writeableExistingVms){
+    Write-Output "SUCCESS! All instances are present and correct."
+}
+else {
+    Write-Error "FAILED! The required and existing VMs do not match."
+}
+
