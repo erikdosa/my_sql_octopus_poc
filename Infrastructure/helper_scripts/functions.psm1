@@ -76,10 +76,10 @@ function Remove-OctopusMachine {
     $id = $targetMachine.Id
     try {
         Invoke-RestMethod -Uri "$octoUrl/api/machines/$id" -Headers $octoApiHeader -Method Delete
-        return "          Removed Octopus Machine $id with IP $ip"
+        return "            Removed Octopus Machine $id with IP $ip"
     }
     catch {
-        return "          No Octopus Machine found with IP $ip"
+        return "            No Octopus Machine found with IP $ip"
     }    
 }
 
