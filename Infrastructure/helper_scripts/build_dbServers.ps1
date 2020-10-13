@@ -1,3 +1,15 @@
+<#
+    Script to spin up all the required infrastructure.
+    Script has 7 parts:
+    1. Initialising variables etc
+    2. Determine how many machines need to be added/deleted
+    3. Removing everything that needs to be deleted
+    4. Adding anything that needs to be added
+    5. Installing dbatools so that we cna ping SQL Server to see when it comes online
+    6. Waiting until everything comes back online
+    7. Verify that we have the correct number of machines
+#>
+
 param(
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
     $ami = "ami-0d2455a34bf134234", # Microsoft Windows Server 2019 Base with Containers
@@ -10,14 +22,19 @@ param(
     $environment = "Manual run"
 )
 
+##########     1. Initialising variables etc     ##########
+
+# Importing helper functions
 Import-Module -Name "$PSScriptRoot\functions.psm1" -Force
 
+# If anything fails, stop
 $ErrorActionPreference = "Stop"
+
+# Starting a stopwatch so we can accurately log timings
 $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
 
-Write-Output "    Auto-filling missing parameters from Octopus System Variables..."
-
 # Initialising variables
+Write-Output "    Auto-filling missing parameters from Octopus System Variables..."
 $rolePrefix = ""
 try {
     $rolePrefix = $OctopusParameters["Octopus.Project.Name"]
@@ -26,7 +43,6 @@ try {
 catch {
     $rolePrefix = "RandomQuotes_SQL"
 }
-
 $tagValue = ""
 try {
     $tagValue = $OctopusParameters["Octopus.Environment.Name"]
@@ -35,7 +51,6 @@ try {
 catch {
     $tagValue = $environment
 }
-
 if ($octoUrl -like ""){
     try {
         $octoUrl = $OctopusParameters["Octopus.Web.ServerUri"]
@@ -45,7 +60,6 @@ if ($octoUrl -like ""){
         Write-Error "Please provide a value for -octoUrl"
     }
 }
-
 if ($envId -like ""){
     try {
         $envId = $OctopusParameters["Octopus.Environment.Id"]
@@ -55,7 +69,6 @@ if ($envId -like ""){
         Write-Error "Please provide a value for -envId"
     }
 }
-
 if ($octoApiKey -like ""){
     try {
         $octoApiKey = $OctopusParameters["API_KEY"]
@@ -64,7 +77,6 @@ if ($octoApiKey -like ""){
         Write-Error "Please provide a value for -octoApiKey"
     }
 }
-
 $checkSql = $true
 if ($sqlOctoPassword -like ""){
     try {
@@ -75,29 +87,30 @@ if ($sqlOctoPassword -like ""){
         $checkSql = $false
     }
 }
-
 $webServerRole = "$rolePrefix-WebServer"
 $dbServerRole = "$rolePrefix-DbServer"
 $dbJumpboxRole = "$rolePrefix-DbJumpbox"
-
 $octoApiHeader = @{ "X-Octopus-ApiKey" = $octoApiKey }
 
 # Reading and encoding the VM startup scripts
 $webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -octoUrl $octoUrl -role $webServerRole
 $dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -octoUrl $octoUrl -role $dbServerRole
 
+##########     2. Determine how many machines need to be added/deleted     ##########
+
 Write-Output "    Checking required infrastucture changes..."
 
-# Calculating the total infra requirement
+# Calculating what infra we already have 
 $existingVmsHash = Get-ExistingInfraTotals -environment $tagValue -rolePrefix $rolePrefix
 $writeableExistingVms = Write-InfraInventory -vmHash $existingVmsHash
 Write-Output "      Existing VMs: $writeableExistingVms"
 
+# Checking the total infra requirement
 $requiredVmsHash = Get-RequiredInfraTotals -numWebServers $numWebServers
 $writeableRequiredVms = Write-InfraInventory -vmHash $requiredVmsHash
 Write-Output "      Required VMs: $writeableRequiredVms"
 
-# Calculating SQL
+# Checking whether we need a new SQL machine
 $deploySql = $false
 if ($existingVmsHash.sqlVms -eq 0){
     Write-Output "        SQL Server deployment is required."
@@ -106,54 +119,74 @@ if ($existingVmsHash.sqlVms -eq 0){
 else {
     Write-Output "        SQL Server is already running."
 }
-# Calculating jump boxes
+# Checking whether we need a new SQL Jumpbox and whether we need to kill the existing one
 $deployJump = $false
+$killJump = $false
 if ($existingVmsHash.jumpVms -eq 0){
     Write-Output "        SQL Jumpbox deployment is required."
     $deployJump = $true
+}
+if ($deploySql -and (-not $deployJump)){
+    Write-Output "        New SQL Server instance being deployed so killing and respawning the SQL Jumpbox as well."
+    $killJump = $true
+    $deployJump = $true    
 }
 else {
     Write-Output "        SQL Jumpbox is already running."
 }
 
-# Calculating web servers
-$deployWebServers = $false
-if (($deploySql) -and ($requiredVmsHash.webVms -gt 0)){
-    Write-Output "        Building a new SQL Server instance so need to re-deploy all web servers too..."
-    Write-Output "          Deleting all old web server(s)..."
-    $webServers = Get-Servers -role $webServerRole -includePending
-    foreach ($webServer in $webServers){
-        $id = $webServer.InstanceId
-        $ip = $webServer.PublicIpAddress
-        Write-Output "            Removing EC2 instance $id at $ip"
-        Remove-EC2Instance -InstanceId $id -Force | out-null
-        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
-    }
-    $totalRequired = $requiredVmsHash.webVms
-    Write-Output "        $totalRequired new web servers required."
-    $deployWebServers = $true
+# Calculating web servers to start/kill
+$webServersToKill = 0
+$webServersToStart = 0
+if ($requiredVmsHash.webVms -gt $existingVmsHash.webVms){
+    $webServersToStart = $requiredVmsHash.webVms - $existingVmsHash.webVms
+    Write-Output "        Need to add $webServersToStart web servers."
 }
-if ((-not $deploySql) -and ($requiredVmsHash.webVms -gt $existingVmsHash.webVms)){
-    $totalRequired = $requiredVmsHash.webVms - $existingVmsHash.webVms
-    Write-Output "        $totalRequired new web servers required."
-    $deployWebServers = $true    
+if ($requiredVmsHash.webVms -lt $existingVmsHash.webVms){
+    $webServersToKill = $existingVmsHash.webVms - $requiredVmsHash.webVms
+    Write-Output "        Too many web servers currently running. Need to remove $webServersToKill web servers."
 }
 if ($requiredVmsHash.webVms -eq $existingVmsHash.webVms){
-    $totalRequired = $requiredVmsHash.webVms - $existingVmsHash.webVms
-    Write-Output "        No additional web servers required."
+    Write-Output "        Correct number of web servers are already running."
 }
-if ((-not $deploySql) -and ($requiredVmsHash.webVms -lt $existingVmsHash.webVms)){
-    $totalRequired = $existingVmsHash.webVms - $requiredVmsHash.webVms
-    Write-Warning "$totalRequired more web servers are already deployed than are necesary. This runbook will ignore the web servers."
+
+##########     3. Removing everything that needs to be deleted     ##########
+
+if ($killJump){
+    Write-Output "      Removing the existing SQL Jumpbox."
+    $jumpServers = Get-Servers -role $dbJumpboxRole -includePending
+    $id = $jumpServers[0].InstanceId
+    $ip = $jumpServers[0].PublicIpAddress    
+    Write-Output "        Removing EC2 instance $id at $ip."
+    Remove-EC2Instance -InstanceId $id -Force | out-null
+    Write-Output "        Removing Octopus Target for $ip."
+    Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
 }
+if ($webServersToKill -gt 0){
+    Write-Output "      Removing $webServersToKill web servers."
+    $webServers = Get-Servers -role $webServerRole -includePending
+    for ($i = 0; $i -lt $webServersToKill; $i++){
+        $id = $webServers[$i].InstanceId
+        $ip = $webServers[$i].PublicIpAddress 
+        Write-Output "        Removing EC2 instance $id at $ip."
+        Remove-EC2Instance -InstanceId $id -Force | out-null
+        Write-Output "        Removing Octopus Target for $ip."
+        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader                
+    }
+}
+
+##########     4. Adding anything that needs to be added     ##########
 
 # Building all the servers
 if($deploySql){
     Write-Output "    Launching SQL Server"
     Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData
-    Write-Output "    (Waiting to launch SQL jumpbox server until we have an IP address for SQL Server instance)." 
+    if($deployJump){
+        Write-Output "      (Waiting to launch SQL jumpbox server until we have an IP address for SQL Server instance)." 
+    }
 }
-if($deployWebServers){
+
+if($webServersToStart -gt 0){
     Write-Output "    Launching Web Server(s)"
     Build-Servers -role $webServerRole -encodedUserData $webServerUserData -required $numWebServers    
 }
@@ -176,7 +209,7 @@ ForEach ($instance in $webServerInstances){
     Write-Output "        Web server $id is in state: $state"
 }
 
-# Checking we've got all the right instances
+# Checking we've got all the right SQL and Web instances
 $instancesFailed = $false
 $errMsg = ""
 if ($dbServerInstances.count -ne 1){
@@ -193,7 +226,7 @@ if ($instancesFailed){
     Write-Error $errMsg
 }
 else {
-    Write-Output "    All instances launched successfully!"
+    Write-Output "    All SQL and web servers launched successfully!"
 }
 
 Write-Output "      Waiting for instances to start... (This normally takes about 30 seconds.)"
@@ -246,7 +279,8 @@ if ($deployJump){
     Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
 }
 
-# Installing dbatools PowerShell module so that we can ping sql server instance
+########   5. Installing dbatools so that we cna ping SQL Server to see when it comes online   ########    ##########
+
 try {
     Import-Module dbatools
 }
@@ -255,6 +289,8 @@ catch {
     Write-Output "      (This takes a couple of minutes)"
     Install-Module dbatools -Force
 }
+
+##########     6. Waiting until everything comes back online     ##########
 
 if ($deployJump){
     # Checking to see if the jumpbox came online
@@ -287,7 +323,7 @@ if ($deployJump){
     }
 }
 
-# Populating our table of VMs
+# Creating a datatable object to keep track of the status of all our VMs
 $vms = New-Object System.Data.Datatable
 [void]$vms.Columns.Add("ip")
 [void]$vms.Columns.Add("role")
@@ -295,21 +331,26 @@ $vms = New-Object System.Data.Datatable
 [void]$vms.Columns.Add("iis_running")
 [void]$vms.Columns.Add("tentacle_listening")
 
+# Only check of SQL is running if we have been given a password for SQL Server
 $sqlrunning = $null
 if ($checkSql){
     $sqlrunning = $false
 }
 
+# SQL Server instances need SQL Server, but not IIS or a tentacle
 ForEach ($instance in $runningDbServerInstances){
     [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$sqlrunning,$null,$null)
 }
+# SQL Jumpboxes need a tentacle, but not SQL Server or IIS 
 ForEach ($instance in $runningDbJumpboxInstances){
     [void]$vms.Rows.Add($instance.PublicIpAddress,$dbJumpboxRole,$null,$null,$false)
 }
+# Web Servers need a tentacle and IIS, but not SQL Server 
 ForEach ($instance in $runningWebServerInstances){
     [void]$vms.Rows.Add($instance.PublicIpAddress,$webServerRole,$null,$false,$false)
 }
-        
+
+# So that anyone executing this runbook has a rough idea how long they can expect to wait
 Write-Output "    Waiting for all instances to complete setup..."
 Write-Output "      Once an instance is running, setup usually takes roughly:"
 Write-Output "         - SQL Jumpbox tentacles:     270-330 seconds"
@@ -320,15 +361,14 @@ Write-Output "         - SQL Server install:        600-750 seconds"
 # Waiting to see if they all come online
 $allVmsConfigured = $false
 $runningWarningGiven = $false
-$octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $sqlOctoPassword
+$sqlCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $sqlOctoPassword
 $sqlDeployed = $false
 
 While (-not $allVmsConfigured){
-    # Checking whether anything new has come online    
-    ## SQL Server
+    # Checking whether SQL Server is online yet
     $pendingSqlServers = $vms.Select("sql_running like '$false'")
     forEach ($ip in $pendingSqlServers.ip){
-        $sqlDeployed = Test-SQL -ip $ip -cred $octoCred
+        $sqlDeployed = Test-SQL -ip $ip -cred $sqlCred
         if ($sqlDeployed){
             Write-Output "      SQL Server is listening at: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
@@ -336,7 +376,7 @@ While (-not $allVmsConfigured){
         }
     }
 
-    ## IIS
+    # Checking whether any IIS instances have come online yet
     $pendingIisInstalls = $vms.Select("iis_running like '$false'")
     forEach ($ip in $pendingIisInstalls.ip){
         $iisDeployed = Test-IIS -ip $ip
@@ -347,7 +387,7 @@ While (-not $allVmsConfigured){
         }
     }
 
-    ## Tentacles
+    # Checking whether any new tentacles have come online yet
     $pendingTentacles = $vms.Select("tentacle_listening like '$false'")
     forEach ($ip in $pendingTentacles.ip){
         $tentacleDeployed = Test-Tentacle -octoUrl $octoUrl -envId $envId -ip $ip -header $octoApiHeader
@@ -359,15 +399,6 @@ While (-not $allVmsConfigured){
                 $thisVmRole = "SQL Jumpbox"
             }
             Write-Output "      $thisVmRole tentacle is listening on: $ip"
-
-        }
-    }
-
-    # Checking if there is anything left that needs to be configured on any VMs
-    $allVmsConfigured = $true
-    ForEach ($vm in $vms){
-        if ($vm.ItemArray -contains "False"){
-            $allVmsConfigured = $false
         }
     }
 
@@ -390,26 +421,39 @@ While (-not $allVmsConfigured){
     ## Tentacles
     $vmsWithTentacles = ($vms.Select("tentacle_listening = '$true'"))
     $numTentacles = $vmsWithTentacles.count
-    $tentaclesRequired = $numWebServers + 1 
+    $tentaclesRequired = $numWebServers + 1 # (All the web servers plus the SQL Jumpbox)
     $currentStatus = "$currentStatus Tentacles deployed: $numTentacles/$tentaclesRequired"
     Write-Output "        $currentStatus"
     
+    # Checking if there is anything left that needs to be configured on any VMs
+    $allVmsConfigured = $true
+    ForEach ($vm in $vms){
+        if ($vm.ItemArray -contains "False"){
+            $allVmsConfigured = $false
+        }
+    }
     if ($allVmsConfigured){
         Write-Output "      All VMs are running successfully."
         break
     }
+
+    # Writing a warning if this is taking a suspiciously long time 
     if (($time -gt 1200) -and (-not $runningWarningGiven)){
         Write-Warning "EC2 instances are taking an unusually long time to start."
         $runningWarningGiven = $true
     }
 
+    # Giving up if we've passed the timeout
     if (($time -gt $timeout)-and (-not $allVmsConfigured)){
         Write-Error "Timed out. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
     }   
+
+    # If we've got this far, we are still waiting for something. Sleeping for a few seconds before checking again.
     Start-Sleep -s 10
 }
 
-Write-Output "    Verifying iinfrastructure:"
+##########     7. Verify that we have the correct number of machines     ##########
+Write-Output "    Verifying infrastructure:"
 
 # Calculating the total infra requirement
 $existingVmsHash = Get-ExistingInfraTotals -environment $tagValue -rolePrefix $rolePrefix
@@ -434,6 +478,6 @@ if ($writeableRequiredVms -like $writeableExistingVms){
     Write-Output "SUCCESS! All instances are present and correct."
 }
 else {
-    Write-Error "FAILED! The required and existing VMs do not match."
+    Write-Error "FAILED! The numbers of required and existing VMs do not match."
 }
 
