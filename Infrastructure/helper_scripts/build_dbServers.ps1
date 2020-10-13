@@ -475,10 +475,13 @@ Write-Output "      Required VMs: $writeableRequiredVms"
 $runningDbServerInstances = Get-Servers -role $dbServerRole
 $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
 $runningWebServerInstances = Get-Servers -role $webServerRole
-Write-Output "        SQL Server:  " + $runningDbServerInstances[0].PublicIpAddress
-Write-Output "        SQL Jumpbox: " + $dbJumpboxInstances[0].PublicIpAddress
+$msg = "        SQL Server:  " + $runningDbServerInstances[0].PublicIpAddress
+Write-Output $msg 
+$msg = "        SQL Server:  " + $runningDbServerInstances[0].PublicIpAddress
+Write-Output $msg 
 ForEach ($instance in $runningWebServerInstances){
-    Write-Output "        Web server: " + $instance.PublicIpAddress
+    $msg = "        Web server: " + $instance.PublicIpAddress
+    Write-Output $msg
 }
 
 # And did it work?
