@@ -112,6 +112,7 @@ elseif (($dbJumpboxInstances.count -gt 0) -and ($deploySql)){
         $ip = $jumpbox.PublicIpAddress
         Write-Output "        Removing instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
+        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
     }
 } 
 else {
@@ -130,6 +131,7 @@ if (($webServers.count -gt 0) -and ($deploySql)){
         $ip = $webServer.PublicIpAddress
         Write-Output "        Removing instance $id at $ip"
         Remove-EC2Instance -InstanceId $id -Force | out-null
+        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader
     }
     $deployWebServers = $true
 }

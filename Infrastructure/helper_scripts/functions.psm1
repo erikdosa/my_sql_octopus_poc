@@ -64,6 +64,25 @@ Function Build-Servers {
     }    
 }
 
+# Helper function to remove an Octopus Tentacle with a given IP address 
+function Remove-OctopusMachine {
+    param (
+        $octoUrl,
+        $ip,
+        $octoApiHeader
+    )
+    $allMachines = ((Invoke-WebRequest ($octoUrl + "/api/machines") -Headers $octoApiHeader -UseBasicParsing).content | ConvertFrom-Json).items
+    $targetMachine = $allMachines | Where-Object {$_.Uri -like "*$ip*"}
+    $id = $targetMachine.Id
+    try {
+        Invoke-RestMethod -Uri "$octoUrl/api/machines/$id" -Headers $octoApiHeader -Method Delete
+        return "Removed machine $id with IP $ip"
+    }
+    catch {
+        return "No machine found with IP $ip"
+    }    
+}
+
 # Helper functions to ping the instances
 function Test-SQL {
     param (
