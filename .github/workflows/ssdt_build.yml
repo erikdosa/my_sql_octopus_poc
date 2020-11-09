@@ -54,7 +54,7 @@ jobs:
         }
         
         Write-Host "Setting version number to: $versionNumber"
-        echo "$versionNumber" | Out-File -FilePath $env:PACKAGE_VERSION -Encoding utf8 -Append      
+        echo "::set-env name=PACKAGE_VERSION::$versionNumber"    
       shell: powershell
 
     # Adds MSBuild to PATH on the agent
