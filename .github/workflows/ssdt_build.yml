@@ -22,10 +22,51 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    - name: Set the version number      
+      run: |        
+        # The first two numbers come from versionprefix.txt
+        $versionFromFile = Get-Content versionprefix.txt 
+        Write-Host "Found $versionFromFile in versionprefix.md"
+        
+        # The last number is the GitHub run number
+        $versionNumber = "$versionfromFile.${env:GITHUB_RUN_NUMBER}"
+        
+        # If this branch isn't main, append the branch name as a prerelease suffix
+        # More info: https://docs.microsoft.com/en-us/nuget/create-packages/prerelease-packages
+        $branchName = "${{github.ref}}".Split("/")["${{github.ref}}".Split("/").Length -1]
+        if ($branchName -notlike "main"){
+          $versionNumber = "$versionNumber-$branchName"
+        }
+        
+        Write-Host "Setting version number to: $versionNumber"
+        echo "::set-env name=PACKAGE_VERSION::$versionNumber"        
+      shell: powershell
+
     # Adds MSBuild to PATH on the agent
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.0.0
 
-    # Runs a single command using the runners shell
-    - name: Run a one-line script
+    # Uses MSBuild to compile the database project and pack the NuGet
+    - name: Build the dacpac
       run: .\Databases\AdventureWorks\build\build.ps1
+
+    - name: Setup NuGet.exe for use with actions
+      uses: NuGet/setup-nuget@v1.0.2
+
+    - name: Pack the NuGet
+      run: |
+        nuget pack "Infrastructure\${env:PACKAGE_NAME}.nuspec" -Version "${env:PACKAGE_VERSION}" -OutputDirectory "${env:OUTPUT_FOLDER}" 
+      shell: powershell  
+
+    - name: Install Octopus Tooling
+      run: choco install octopustools -y
+      shell: powershell
+
+    - name: Handoff to Octopus Deploy
+      env:
+        OCTOPUS_URL: ${{ secrets.OCTOPUS_SERVER_URL }}
+        OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}        
+      run: |        
+        octo push --package="${env:OUTPUT_FOLDER}\${env:PACKAGE_NAME}.${env:PACKAGE_VERSION}.nupkg" --server="${env:OCTOPUS_URL}" --apiKey="${env:OCTOPUS_API_KEY}" --space="${env:OCTOPUS_SPACE_NAME}"
+      shell: powershell   
+  

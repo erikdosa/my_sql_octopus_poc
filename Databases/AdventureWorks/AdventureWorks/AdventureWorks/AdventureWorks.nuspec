@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>AdventureWorks</id>
+    <version>0.0.0</version>
+    <authors>Alex Yates</authors>
+    <description>Dacpac to deploy AdventureWorks database</description>
+    <language>en-US</language>
+    <projectUrl>https://github.com/dlmconsultants/my_sql_octopus_poc</projectUrl>
+  </metadata>
+</package>
