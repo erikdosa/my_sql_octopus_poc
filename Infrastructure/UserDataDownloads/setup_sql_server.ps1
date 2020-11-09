@@ -53,3 +53,6 @@ New-DbaLogin -SqlInstance $SQLServer -Login octopus -SecurePassword $octopusPass
 Write-Output "  Making both student and octopus logins SysAdmins."
 Set-DbaLogin -SqlInstance $SQLServer -Login student -AddRole "sysadmin" -SqlCredential $cred
 Set-DbaLogin -SqlInstance $SQLServer -Login octopus -AddRole "sysadmin" -SqlCredential $cred
+
+Write-Output "  Creating databases."
+New-DbaDatabase -SqlInstance $SQLServer -Name AdventureWorks, SqlServerCentral, WideWorldImporters, RandomQuotes -SqlCredential $cred
