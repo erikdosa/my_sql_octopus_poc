@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [ main ]
 
+env:  
+  OUTPUT_FOLDER: PackagesOutput
+  PACKAGE_NAME: AdventureWorks
+  OCTOPUS_SPACE_NAME: Default
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -55,7 +60,7 @@ jobs:
 
     - name: Pack the NuGet
       run: |
-        nuget pack "Infrastructure\${env:PACKAGE_NAME}.nuspec" -Version "${env:PACKAGE_VERSION}" -OutputDirectory "${env:OUTPUT_FOLDER}" 
+        nuget pack "${env:PACKAGE_NAME}.nuspec" -Version "${env:PACKAGE_VERSION}" -OutputDirectory "${env:OUTPUT_FOLDER}" 
       shell: powershell  
 
     - name: Install Octopus Tooling
