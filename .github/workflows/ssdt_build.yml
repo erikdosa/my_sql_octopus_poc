@@ -6,9 +6,19 @@ name: SSDT - Build and package DacPac and push to Octopus Deploy
 # events but only for the master branch
 on:
   push:
-    branches: [ main ]
+    branches: '*'
+    paths:
+    - 'Databases/AdventureWorks/**'
+    - '.github/workflows/ssdt_build.yml'
   pull_request:
-    branches: [ main ]
+    branches: '*'
+    paths:
+    - 'Databases/AdventureWorks/**'
+    - '.github/workflows/ssdt_build.yml'
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Manual run' 
 
 env:  
   OUTPUT_FOLDER: PackagesOutput
