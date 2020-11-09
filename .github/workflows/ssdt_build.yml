@@ -54,12 +54,12 @@ jobs:
         }
         
         Write-Host "Setting version number to: $versionNumber"
-        echo "PACKAGE_VERSION=$versionNumber" >> $GITHUB_ENV        
+        echo "$versionNumber" | Out-File -FilePath $env:PACKAGE_VERSION -Encoding utf8 -Append      
       shell: powershell
 
     # Adds MSBuild to PATH on the agent
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.0
+      uses: microsoft/setup-msbuild@v1.0.2
 
     # Uses MSBuild to compile the database project and pack the NuGet
     - name: Build the dacpac
