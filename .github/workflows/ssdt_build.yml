@@ -60,7 +60,7 @@ jobs:
 
     - name: Pack the NuGet
       run: |
-        nuget pack "${env:PACKAGE_NAME}.nuspec" -Version "${env:PACKAGE_VERSION}" -OutputDirectory "${env:OUTPUT_FOLDER}" 
+        nuget pack ".\Databases\AdventureWorks\AdventureWorks\AdventureWorks\bin\Debug\${env:PACKAGE_NAME}.nuspec" -Version "${env:PACKAGE_VERSION}" -OutputDirectory "${env:OUTPUT_FOLDER}" 
       shell: powershell  
 
     - name: Install Octopus Tooling
