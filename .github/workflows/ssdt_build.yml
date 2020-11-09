@@ -54,7 +54,7 @@ jobs:
         }
         
         Write-Host "Setting version number to: $versionNumber"
-        echo "::set-env name=PACKAGE_VERSION::$versionNumber"        
+        echo "PACKAGE_VERSION=$versionNumber" >> $GITHUB_ENV        
       shell: powershell
 
     # Adds MSBuild to PATH on the agent
