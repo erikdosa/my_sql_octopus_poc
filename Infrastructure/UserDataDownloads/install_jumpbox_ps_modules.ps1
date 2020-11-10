@@ -16,6 +16,8 @@ $s = New-PSSession
 Write-Output "      Installing SQL Change Automation and SqlServer PowerShell modules..."
 $script = @"
 Install-Module SqlChangeAutomation -AcceptLicense -Force
-Install-Module -Name SqlServer -AllowClobber -Force
+
+# This bit is currently broken. Not sure why. Still trying to use the old PowerShellGet
+# Install-Module -Name SqlServer -AllowClobber -Force
 "@
 Invoke-Command -Session $s -ScriptBlock {$script} -AsJob
