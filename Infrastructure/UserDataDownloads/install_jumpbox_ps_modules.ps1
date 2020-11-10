@@ -13,9 +13,9 @@ Install-Module dbatools -Force
 # SqlChangeAutomation
 # Creating a new session to install SqlChangeAutomation and SqlServer to ensure correct version of PowerShellGet is used
 $s = New-PSSession
-Write-Output "      Installing SQL Change Automation PowerShell module..."
-Invoke-Command -Session $s -ScriptBlock {Install-Module SqlChangeAutomation -AcceptLicense -Force} -AsJob
-
-# SqlServer
-Write-Output "      Installing SQLServer PowerShell module..."
-Invoke-Command -Session $s -ScriptBlock {Install-Module -Name SqlServer -AllowClobber -Force} -AsJob
+Write-Output "      Installing SQL Change Automation and SqlServer PowerShell modules..."
+$script = @"
+Install-Module SqlChangeAutomation -AcceptLicense -Force
+Install-Module -Name SqlServer -AllowClobber -Force
+"@
+Invoke-Command -Session $s -ScriptBlock {$script} -AsJob
