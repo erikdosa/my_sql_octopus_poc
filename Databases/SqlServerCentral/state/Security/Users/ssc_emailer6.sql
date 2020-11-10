@@ -1,0 +1,2 @@
+CREATE USER [ssc_emailer6] WITHOUT LOGIN
+GO

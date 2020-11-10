@@ -1,0 +1,2 @@
+CREATE USER [jess.nickson] WITHOUT LOGIN
+GO

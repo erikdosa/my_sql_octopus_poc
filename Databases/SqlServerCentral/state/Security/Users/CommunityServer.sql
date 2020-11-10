@@ -1,0 +1,2 @@
+CREATE USER [CommunityServer] WITHOUT LOGIN
+GO

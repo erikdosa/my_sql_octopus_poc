@@ -1,0 +1,2 @@
+CREATE USER [dave.convery] WITHOUT LOGIN
+GO

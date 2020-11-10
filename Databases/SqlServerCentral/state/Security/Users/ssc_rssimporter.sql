@@ -1,0 +1,2 @@
+CREATE USER [ssc_rssimporter] WITHOUT LOGIN
+GO

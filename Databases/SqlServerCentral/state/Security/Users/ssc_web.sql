@@ -1,0 +1,2 @@
+CREATE USER [ssc_web] WITHOUT LOGIN
+GO

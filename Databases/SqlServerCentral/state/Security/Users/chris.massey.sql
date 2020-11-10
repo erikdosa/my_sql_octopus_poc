@@ -1,0 +1,2 @@
+CREATE USER [chris.massey] WITHOUT LOGIN
+GO

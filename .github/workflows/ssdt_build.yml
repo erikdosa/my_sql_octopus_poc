@@ -1,6 +1,4 @@
-# This is a basic workflow to help you get started with Actions
-
-name: SSDT - Build and package DacPac and push to Octopus Deploy
+name: SSDT - Build and package AdventureWorks DacPac and push to Octopus Deploy
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
