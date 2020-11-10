@@ -54,7 +54,7 @@ Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerU
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
 
 # Installing tentacle changes the location so switching it back
-Set-Location $scriptsDir
+set-location "$startupDir\$scriptsDir"
 
 # While waiting for SQL Server to come online, taking the opportunity to install a few useful PowerShell modules
 Write-Output "*"
