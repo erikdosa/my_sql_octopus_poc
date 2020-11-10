@@ -19,21 +19,6 @@ $studentPassword = Get-Secret -secret "STUDENT_SQL_PASSWORD" | ConvertTo-SecureS
 $octopusPassword = Get-Secret -secret "OCTOPUS_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
 $saPassword = Get-Secret -secret "SYSADMIN_SQL_PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
 
-Write-Output "      Installing NuGet package provider (required for dbatools)..."
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force 
-Write-Output "      Installing dbatools PowerShell Module..."
-Install-Module dbatools -Force
-Write-Output "      Installing new PowerShellGet (required for SQL Change Automation)..."
-Install-Module PowerShellGet -MinimumVersion 1.6 -Force -AllowClobber
-# Hard deleting the old version of PowerShellGet
-Remove-Item -LiteralPath "C:\Program Files\WindowsPowerShell\Modules\PowerShellGet\1.0.0.1" -Force -Recurse
-# Creating a new session to install SqlChangeAutomation and SqlServer to ensure correct version of PowerShellGet is used
-$s = New-PSSession
-Write-Output "      Installing SQL Change Automation PowerShell Module..."
-Invoke-Command -Session $s -ScriptBlock {Install-Module SqlChangeAutomation -AcceptLicense -Force} -AsJob
-Write-Output "      Installing SQLServer PowerShell module..."
-Invoke-Command -Session $s -ScriptBlock {Install-Module -Name SqlServer -AllowClobber -Force} -AsJob
-
 $saUser = "sa"
 $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUser, $saPassword
 

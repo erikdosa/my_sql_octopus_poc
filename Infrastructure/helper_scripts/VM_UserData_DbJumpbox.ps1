@@ -53,6 +53,12 @@ Get-Script -script "install_tentacle.ps1"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
 
+# While waiting for SQL Server to come online, taking the opportunity to install a few useful PowerShell modules
+Write-Output "*"
+Get-Script -script "install_jumpbox_ps_modules.ps1"
+Write-Output "Executing ./install_jumpbox_ps_modules.ps1"
+./install_jumpbox_ps_modules.ps1
+
 # Creating SQL logins so that student and octopus can both access SQL Server
 Write-Output "*"
 Get-Script -script "setup_sql_server.ps1"
