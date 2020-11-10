@@ -53,6 +53,9 @@ Get-Script -script "install_tentacle.ps1"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
 
+# Installing tentacle changes the location so switching it back
+Set-Location $scriptsDir
+
 # While waiting for SQL Server to come online, taking the opportunity to install a few useful PowerShell modules
 Write-Output "*"
 Get-Script -script "install_jumpbox_ps_modules.ps1"
