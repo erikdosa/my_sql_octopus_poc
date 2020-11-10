@@ -22,6 +22,8 @@ $saPassword = Get-Secret -secret "SYSADMIN_SQL_PASSWORD" | ConvertTo-SecureStrin
 $saUser = "sa"
 $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUser, $saPassword
 
+import-module dbatools
+
 # Waiting for SQL Server to come online
 $sqlOnline = $false
 $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
