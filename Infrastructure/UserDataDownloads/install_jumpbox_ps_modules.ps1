@@ -13,4 +13,5 @@ Install-Module SqlChangeAutomation -AcceptLicense -Force
 # This bit is currently broken. Not sure why. Still trying to use the old PowerShellGet
 # Install-Module -Name SqlServer -AllowClobber -Force
 "@
-Invoke-Command -Session $s -ScriptBlock {$script} -AsJob
+Invoke-Command -Session $s -ScriptBlock {$script}
+Remove-PSSession $s
