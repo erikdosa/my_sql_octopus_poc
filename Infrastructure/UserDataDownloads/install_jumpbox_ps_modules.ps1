@@ -7,7 +7,7 @@ Remove-Item -LiteralPath "C:\Program Files\WindowsPowerShell\Modules\PowerShellG
 Write-Output "      Starting a new session to ensure using new version of PowerShellGet..."
 Invoke-Command { & "powershell.exe" } -NoNewScope
 
-$log = "C:\StartupLogSession2of2.txt"
+$log = "C:\Startup\StartupLogSession2of2.txt"
 Write-Output " Creating a new log file at $log"
 Start-Transcript -path $log -append
 
