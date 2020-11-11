@@ -4,6 +4,12 @@ param(
     [Parameter(Mandatory=$true)]$SQLServer = ""
 )
 
+# Installing dbatools
+Write-Output "      Installing NuGet package provider (required for dbatools)..."
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force 
+Write-Output "      Installing dbatools PowerShell module..."
+Install-Module dbatools -Force
+
 # Function to securely retrieve secrets from AWS Secrets Manager
 function get-secret(){
   param ($secret)

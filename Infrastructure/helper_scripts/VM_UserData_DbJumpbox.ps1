@@ -56,19 +56,17 @@ Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerU
 # Installing tentacle changes the location so switching it back
 set-location "$startupDir\$scriptsDir"
 
-# While waiting for SQL Server to come online, taking the opportunity to install a few useful PowerShell modules
+# Creating SQL logins so that student and octopus can both access SQL Server
+Write-Output "*"
+Get-Script -script "setup_sql_server.ps1"
+Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp"
+./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp
+
+# Taking the opportunity to install a few useful PowerShell modules
 Write-Output "*"
 Get-Script -script "install_jumpbox_ps_modules.ps1"
 Write-Output "Executing ./install_jumpbox_ps_modules.ps1"
 ./install_jumpbox_ps_modules.ps1
-
-# Creating SQL logins so that student and octopus can both access SQL Server
-Write-Output "*"
-Get-Script -script "setup_sql_server.ps1"
-$command = "./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp"
-Write-Output "Executing $command"
-$newSession = New-PSSession
-Invoke-Command -Session $newSession -ScriptBlock {$command} -AsJob
 
 # Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
 Write-Output "*"
