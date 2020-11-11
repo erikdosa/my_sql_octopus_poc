@@ -11,7 +11,7 @@ if ((test-path $startupDir) -ne $true) {
 Set-Location $startupDir
 
 # If for whatever reason this doesn't work, check this file:
-$log = ".\StartupLogSession1of2.txt"
+$log = ".\StartupLog.txt"
 Write-Output " Creating log file at $log"
 Start-Transcript -path $log -append
 
@@ -78,7 +78,8 @@ Get-Script -script "install_ssms.ps1"
 Write-Output "Executing ./install_ssms.ps1"
 ./install_ssms.ps1
 
-Write-Output "VM_UserData startup script completed..."
+$date = Get-Date
+Write-Output "VM_UserData startup script completed at $date."
 </powershell>
 
 
