@@ -66,17 +66,17 @@ Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $reg
 Write-Output "*"
 Get-Script -script "install_jumpbox_ps_modules.ps1"
 Write-Output "Executing ./install_jumpbox_ps_modules.ps1"
-# ./install_jumpbox_ps_modules.ps1
+./install_jumpbox_ps_modules.ps1
 
 # Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
 Write-Output "*"
 Get-Script -script "install_choco.ps1"
 Write-Output "Executing ./install_choco.ps1"
-# ./install_choco.ps1
+./install_choco.ps1
 Write-Output "*"
 Get-Script -script "install_ssms.ps1"
 Write-Output "Executing ./install_ssms.ps1"
-# ./install_ssms.ps1
+./install_ssms.ps1
 
 Write-Output "VM_UserData startup script completed..."
 </powershell>
