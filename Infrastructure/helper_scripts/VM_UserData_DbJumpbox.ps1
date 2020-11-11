@@ -11,7 +11,7 @@ if ((test-path $startupDir) -ne $true) {
 Set-Location $startupDir
 
 # If for whatever reason this doesn't work, check this file:
-$log = ".\StartupLog.txt"
+$log = ".\StartupLogSession1of2.txt"
 Write-Output " Creating log file at $log"
 Start-Transcript -path $log -append
 
