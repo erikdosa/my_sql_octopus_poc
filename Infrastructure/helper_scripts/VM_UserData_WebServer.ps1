@@ -15,6 +15,9 @@ $log = ".\StartupLog.txt"
 Write-Output " Creating log file at $log"
 Start-Transcript -path $log -append
 
+$date = Get-Date
+Write-Output "VM_UserData startup script started at $date."
+
 Set-Location $startupDir
 
 if ((test-path $scriptsDir) -ne $true) {
@@ -38,17 +41,20 @@ Function Get-Script{
   Invoke-WebRequest -Uri $uri -OutFile ".\$script" -Verbose
 }
 
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "setup_iis.ps1"
 Write-Output "Executing ./setup_iis.ps1"
 ./setup_iis.ps1
 
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "setup_dotnet_core.ps1"
 Write-Output "Executing ./setup_dotnet_core.ps1"
 ./setup_dotnet_core.ps1
@@ -57,12 +63,14 @@ $octopusServerUrl = "__OCTOPUSURL__"
 $registerInEnvironments = "__ENV__"
 $registerInRoles = "__ROLE__"
 
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "install_tentacle.ps1"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
 
-Write-Output "VM_UserData startup script completed..."
+$date = Get-Date
+Write-Output "VM_UserData startup script completed at $date."
 </powershell>
 
 

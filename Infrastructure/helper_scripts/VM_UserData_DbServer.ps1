@@ -15,6 +15,9 @@ $log = ".\StartupLog.txt"
 Write-Output " Creating log file at $log"
 Start-Transcript -path $log -append
 
+$date = Get-Date
+Write-Output "VM_UserData startup script started at $date."
+
 Set-Location $startupDir
 
 if ((test-path $scriptsDir) -ne $true) {
@@ -39,19 +42,22 @@ Function Get-Script{
 }
 
 # Setting up users first, so that if anything goes wrong later, folks can RDP in to troubleshoot
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
 # Chocolatey is required for both SQL Server and SSMS installs
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "install_choco.ps1"
 Write-Output "Executing ./install_choco.ps1"
 ./install_choco.ps1
 
 # Installing SQL Server, using a specific config file
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Write-Output "Downloading ConfigurationFile.ini and install_sql_with_choco.ps1"
 Get-Script -script "ConfigurationFile.ini"
 Get-Script -script "install_sql_server.ps1"
@@ -59,12 +65,14 @@ Write-Output "Executing ./install_sql_server.ps1"
 ./install_sql_server.ps1
 
 # Installing SSMS for convenience. Not required to deploy anything so doing this last to avoid delays.
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "install_ssms.ps1"
 Write-Output "Executing ./install_ssms.ps1"
 ./install_ssms.ps1
 
-Write-Output "VM_UserData startup script completed..."
+$date = Get-Date
+Write-Output "VM_UserData startup script completed at $date."
 </powershell>
 
 

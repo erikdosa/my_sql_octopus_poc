@@ -15,6 +15,9 @@ $log = ".\StartupLog.txt"
 Write-Output " Creating log file at $log"
 Start-Transcript -path $log -append
 
+$date = Get-Date
+Write-Output "VM_UserData startup script started at $date."
+
 Set-Location $startupDir
 
 if ((test-path $scriptsDir) -ne $true) {
@@ -38,7 +41,8 @@ Function Get-Script{
   Invoke-WebRequest -Uri $uri -OutFile ".\$script" -Verbose
 }
 
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
@@ -48,7 +52,8 @@ $registerInEnvironments = "__ENV__"
 $registerInRoles = "__ROLE__"
 $sqlServerIp = "__SQLSERVERIP__"
 
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "install_tentacle.ps1"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
@@ -57,23 +62,28 @@ Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerU
 set-location "$startupDir\$scriptsDir"
 
 # Creating SQL logins so that student and octopus can both access SQL Server
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "setup_sql_server.ps1"
 Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp"
 ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp
 
 # Taking the opportunity to install a few useful PowerShell modules
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "install_jumpbox_ps_modules.ps1"
 Write-Output "Executing ./install_jumpbox_ps_modules.ps1"
 ./install_jumpbox_ps_modules.ps1
 
 # Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
-Write-Output "*"
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "install_choco.ps1"
 Write-Output "Executing ./install_choco.ps1"
 ./install_choco.ps1
-Write-Output "*"
+
+$date = Get-Date
+Write-Output "*** $date ***"
 Get-Script -script "install_ssms.ps1"
 Write-Output "Executing ./install_ssms.ps1"
 ./install_ssms.ps1
