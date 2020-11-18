@@ -63,9 +63,9 @@ jobs:
       shell: powershell
 
     - name: Verify the version number      
-      run: |        
-        $pack_version = $PACKAGE_VERSION
-        Write-Output "PACKAGE_VERSION is $PACKAGE_VERSION"
+      run: |       
+        $packver = echo $PACKAGE_VERSION
+        Write-Output "PACKAGE_VERSION is $packver"
       shell: powershell
 
     - name: Update UserData file to pull helper scripts from correct repo
