@@ -71,6 +71,19 @@ jobs:
       run: |       
         $packver = echo $PACKAGE_VERSION
         Write-Output "PACKAGE_VERSION is $packver"
+
+        $packver = $PACKAGE_VERSION
+        Write-Output "PACKAGE_VERSION is $packver"
+
+        Write-Output "PACKAGE_VERSION is $PACKAGE_VERSION"
+
+        Write-Output "PACKAGE_VERSION is ${env:PACKAGE_VERSION}"
+
+        $packver = echo ${env:PACKAGE_VERSION}
+        Write-Output "PACKAGE_VERSION is $packver"
+        
+        $packver = ${env:PACKAGE_VERSION}
+        Write-Output "PACKAGE_VERSION is $packver"
       shell: powershell
 
     - name: Update UserData file to pull helper scripts from correct repo
