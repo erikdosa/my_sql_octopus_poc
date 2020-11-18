@@ -64,7 +64,8 @@ jobs:
 
     - name: Verify the version number      
       run: |        
-        Write-Host "PACKAGE_VERSION is ${env:PACKAGE_VERSION}"
+        $pack_version = ${env:PACKAGE_VERSION}
+        Write-Host "PACKAGE_VERSION is $pack_version"
      shell: powershell
 
     - name: Update UserData file to pull helper scripts from correct repo
