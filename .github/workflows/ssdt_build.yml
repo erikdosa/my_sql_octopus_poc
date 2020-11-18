@@ -25,6 +25,7 @@ env:
   OUTPUT_FOLDER: PackagesOutput
   PACKAGE_NAME: AdventureWorks
   OCTOPUS_SPACE_NAME: Default
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
