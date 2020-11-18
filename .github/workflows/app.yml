@@ -39,13 +39,13 @@ jobs:
     - name: Extract branch name
       if: github.event_name != 'pull_request'
       shell: bash
-      run: echo "::set-env name=BRANCH_NAME::$(echo ${GITHUB_REF#refs/heads/})"
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
       id: extract_branch
 
     # extract branch name on pull request
     - name: Clean branch name for pull requests
       if: github.event_name == 'pull_request'
-      run: echo "::set-env name=BRANCH_NAME::$(echo ${GITHUB_HEAD_REF})"
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_ENV
 
     # Setting a prerelease suffix if not main branch
     # More info: https://docs.microsoft.com/en-us/nuget/create-packages/prerelease-packages#:~:text=To%20support%20the%20software%20release,%2Dbeta%20%2C%20or%20%2Drc%20.
@@ -61,7 +61,7 @@ jobs:
           NUGETSUFFIX="-$BRANCH_NAME"
           echo "This branch is not main. Adding prerelease suffix to NuGet version number."
         fi
-        echo "::set-env name=SUFFIX::$(echo $NUGETSUFFIX)"
+        echo "SUFFIX=$(echo $NUGETSUFFIX)" >> $GITHUB_ENV
       id: create_suffix
       
     - name: Logging variables      
