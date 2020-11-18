@@ -66,7 +66,7 @@ jobs:
       run: |        
         $pack_version = ${env:PACKAGE_VERSION}
         Write-Output "PACKAGE_VERSION is $pack_version"
-     shell: powershell
+      shell: powershell
 
     - name: Update UserData file to pull helper scripts from correct repo
       run: |
