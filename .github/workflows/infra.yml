@@ -59,12 +59,12 @@ jobs:
         }
         
         Write-Output "Setting version number to: $versionNumber"
-        echo "PACKAGE_VERSION=$(echo $versionNumber)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append     
+        echo "PACKAGE_VERSION=$versionNumber" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append     
       shell: powershell
 
     - name: Verify the version number      
       run: |        
-        $pack_version = ${env:PACKAGE_VERSION}
+        $pack_version = $PACKAGE_VERSION
         Write-Output "PACKAGE_VERSION is $pack_version"
       shell: powershell
 
