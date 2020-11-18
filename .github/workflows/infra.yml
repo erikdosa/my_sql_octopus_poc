@@ -46,7 +46,7 @@ jobs:
       run: |        
         # The first two numbers come from versionprefix.txt
         $versionFromFile = Get-Content versionprefix.txt 
-        Write-Host "Found $versionFromFile in versionprefix.md"
+        Write-Output "Found $versionFromFile in versionprefix.md"
         
         # The last number is the GitHub run number
         $versionNumber = "$versionfromFile.${env:GITHUB_RUN_NUMBER}"
@@ -58,14 +58,14 @@ jobs:
           $versionNumber = "$versionNumber-$branchName"
         }
         
-        Write-Host "Setting version number to: $versionNumber"
+        Write-Output "Setting version number to: $versionNumber"
         echo "PACKAGE_VERSION=$(echo $versionNumber)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append     
       shell: powershell
 
     - name: Verify the version number      
       run: |        
         $pack_version = ${env:PACKAGE_VERSION}
-        Write-Host "PACKAGE_VERSION is $pack_version"
+        Write-Output "PACKAGE_VERSION is $pack_version"
      shell: powershell
 
     - name: Update UserData file to pull helper scripts from correct repo
