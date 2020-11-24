@@ -17,7 +17,7 @@ catch {
 if ($createGroup){
     # Creates a new security group
     Write-Output "    Creating security group $securityGroupName."
-    New-EC2SecurityGroup -GroupName $securityGroupName -Description "Accepts RDP and Octopus traffic from any IP address."
+    New-EC2SecurityGroup -GroupName $securityGroupName -Description "Accepts RDP, Octopus, MSSQL and web hosting traffic from any IP address."
 
     # Creates an IP rule to enable inbound RDP and Octopus traffic from any device and adds it to security group
     Write-Output "    Enabling public RDP traffic to all VMs in the group $securityGroupName."
