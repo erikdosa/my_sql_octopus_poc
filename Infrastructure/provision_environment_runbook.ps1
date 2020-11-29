@@ -2,7 +2,7 @@ param(
     $awsAccessKey = "",
     $awsSecretKey = "",
     $defaulAwsRegion = "eu-west-1", # Other carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
-    $securityGroupName = "RandomQuotes",
+    $securityGroupName = "RandomQuotes_SQL",
     $numWebServers = 1,
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
     $ami = "ami-03acdf9028d28249e", # Microsoft Windows Server 2019 Base with Containers
