@@ -4,7 +4,7 @@ param(
 $ErrorActionPreference = "Stop"  
 
 $policy = "$PSScriptRoot\IAM_SecretsManager_Policy.json"
-"Policy is saved at: $policy"
+Write-Output "    Policy is saved at: $policy"
 
 
 $createRole = $false
